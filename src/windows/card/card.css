@@ -1,0 +1,52 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body is transparent — the card div provides the visible surface */
+html, body {
+  background: transparent;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Card div: dark background with rounded corners — fades in/out via opacity */
+#card {
+  background: #1A1A1E;
+  border-radius: 10px;
+  padding: 16px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 180px;
+  max-width: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+#card.visible {
+  opacity: 1;
+}
+
+#word {
+  color: #FFFFFF;
+  font-family: -apple-system, 'Segoe UI', sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+#translation {
+  color: #A0A0A8;
+  font-family: -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  text-align: center;
+}

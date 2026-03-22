@@ -1,0 +1,45 @@
+# Rust build artifacts
+target/
+src-tauri/target/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+
+# Claude Code local settings
+.claude/
+
+# Binaries
+*.exe
+*.dmg
+*.AppImage
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.local
+
+# User data files
+data/
+
+# Build scratch/error logs
+src-tauri/build_errors*.txt
+src-tauri/err.txt

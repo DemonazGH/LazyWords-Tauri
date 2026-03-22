@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LazyWords</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <header>
+    <span class="logo">LazyWords</span>
+    <nav class="tabs">
+      <button class="tab active" data-tab="settings" data-i18n="settings.tab.settings">Settings</button>
+      <button class="tab" data-tab="stats" data-i18n="settings.tab.stats">Statistics</button>
+    </nav>
+    <span id="autosave-tag">✓</span>
+  </header>
+
+  <!-- ── SETTINGS TAB ─────────────────────────────────────── -->
+  <section id="tab-settings" class="tab-panel active">
+
+    <div class="group">
+      <label class="group-title" data-i18n="settings.language">Interface language</label>
+      <div class="row">
+        <label></label>
+        <select id="language">
+          <option value="auto" data-i18n="settings.language.auto">Auto (follow OS)</option>
+          <option value="en">English</option>
+          <option value="ru">Русский</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <label class="group-title" data-i18n="settings.position">Card position</label>
+      <div class="position-grid">
+        <button class="pos-btn" data-pos="top-left" data-i18n="settings.position.topLeft">↖ Top left</button>
+        <button class="pos-btn" data-pos="top-center" data-i18n="settings.position.topCenter">↑ Top center</button>
+        <button class="pos-btn" data-pos="top-right" data-i18n="settings.position.topRight">↗ Top right</button>
+        <button class="pos-btn" data-pos="bottom-left" data-i18n="settings.position.bottomLeft">↙ Bottom left</button>
+        <button class="pos-btn" data-pos="center" data-i18n="settings.position.center">⊙ Center</button>
+        <button class="pos-btn" data-pos="bottom-right" data-i18n="settings.position.bottomRight">↘ Bottom right</button>
+        <button class="pos-btn wide" data-pos="random" data-i18n="settings.position.random">🔀 Random</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <label class="group-title" data-i18n="settings.appearance">Appearance</label>
+      <div class="row">
+        <label><span data-i18n="settings.fontSize">Font size</span> <span id="fontSize-val">22</span> <span data-i18n="settings.fontSize.unit">px</span></label>
+        <input type="range" id="fontSize" min="14" max="36" step="1" value="22">
+      </div>
+      <div class="row">
+        <label><span data-i18n="settings.showDuration">Show duration</span> <span id="showDuration-val">4</span> <span data-i18n="settings.showDuration.unit">sec</span></label>
+        <input type="range" id="showDuration" min="2" max="15" step="1" value="4">
+      </div>
+      <div class="row">
+        <label><span data-i18n="settings.interval">Interval</span> <span id="interval-val">3</span> <span data-i18n="settings.interval.unit">min</span></label>
+        <input type="range" id="interval" min="1" max="30" step="1" value="3">
+      </div>
+      <div class="row">
+        <label><span data-i18n="settings.fadeDuration">Fade animation</span> <span id="fadeDuration-val">0.5</span> <span data-i18n="settings.fadeDuration.unit">sec</span></label>
+        <input type="range" id="fadeDuration" min="0" max="2" step="0.1" value="0.5">
+      </div>
+    </div>
+
+    <div class="group">
+      <label class="group-title" data-i18n="settings.dictionary">Dictionary</label>
+      <div class="row">
+        <label data-i18n="settings.activeDictionary">Active dictionary</label>
+        <select id="activeDictionary"></select>
+        <button id="btn-delete-dict" class="btn-delete-dict" data-i18n-title="settings.delete" title="Delete" style="display:none">×</button>
+      </div>
+      <div class="import-row">
+        <button id="btn-import" class="btn-secondary" data-i18n="settings.import">Import dictionary…</button>
+        <span id="import-msg" class="import-msg"></span>
+      </div>
+      <p class="hint"><span data-i18n="settings.import.formats">Supported formats: CSV, JSON, XLSX. Required columns:</span> <code>word</code>, <code>translation</code>.</p>
+    </div>
+
+    <div class="group">
+      <div class="learned-header">
+        <label class="group-title"><span data-i18n="settings.learned">Learned words</span> (<span id="learned-count">0</span>)</label>
+        <button id="btn-restore-all" class="btn-text btn-restore-all" style="display:none" data-i18n="settings.learned.restoreAll">Restore all</button>
+      </div>
+      <input type="text" id="learned-search" class="learned-search"
+        data-i18n-placeholder="settings.learned.search" placeholder="Search…" style="display:none">
+      <ul id="learned-list" class="learned-list"></ul>
+      <p id="learned-empty" class="hint" data-i18n="settings.learned.empty">No learned words. Use Ctrl+Shift+K to mark a word.</p>
+      <button id="btn-show-all" class="btn-text" style="display:none"></button>
+    </div>
+
+    <div class="group">
+      <label class="group-title" data-i18n="settings.behavior">Behavior</label>
+      <label class="toggle-row">
+        <input type="checkbox" id="autoStart">
+        <span data-i18n="settings.autostart">Start with Windows</span>
+      </label>
+    </div>
+
+    <div class="group">
+      <label class="group-title" data-i18n="settings.hotkeys">Hotkeys</label>
+      <table class="hotkeys">
+        <tr><td><kbd>Ctrl+Shift+P</kbd></td><td data-i18n="settings.hotkey.pause">Pause / resume</td></tr>
+        <tr><td><kbd>Ctrl+Shift+N</kbd></td><td data-i18n="settings.hotkey.next">Next word</td></tr>
+        <tr><td><kbd>Ctrl+Shift+K</kbd></td><td data-i18n="settings.hotkey.know">Know — remove from rotation</td></tr>
+        <tr><td><kbd>Ctrl+Shift+W</kbd></td><td data-i18n="settings.hotkey.settings">Open / close settings</td></tr>
+      </table>
+    </div>
+
+  </section>
+
+  <!-- ── STATS TAB ────────────────────────────────────────── -->
+  <section id="tab-stats" class="tab-panel">
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-shown-today">0</div>
+        <div class="stat-label" data-i18n="stats.shownToday">shown today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-learned-today">0</div>
+        <div class="stat-label" data-i18n="stats.learnedToday">learned today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label" data-i18n="stats.streak">days in a row</div>
+      </div>
+    </div>
+
+    <div class="group">
+      <label class="group-title" data-i18n="stats.progress">Dictionary progress</label>
+      <div class="progress-labels">
+        <span id="stat-learned-total">0</span> <span data-i18n="stats.learnedOf">learned of</span> <span id="stat-total">0</span> <span data-i18n="stats.words">words</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="stat-progress-fill"></div>
+      </div>
+      <div class="progress-pct" id="stat-progress-pct">0%</div>
+    </div>
+
+    <div class="group">
+      <label class="group-title" data-i18n="stats.last7days">Last 7 days</label>
+      <div class="chart" id="chart"></div>
+      <div class="chart-legend">
+        <span class="legend-dot shown"></span> <span data-i18n="stats.shown">shown</span>
+        <span class="legend-dot learned"></span> <span data-i18n="stats.learned">learned</span>
+      </div>
+    </div>
+
+  </section>
+
+  <script src="../../tauri-api.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

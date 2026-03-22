@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LazyWords</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      background: #1A1A1E;
+      color: #f4f4f5;
+      border-radius: 14px;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .card {
+      padding: 18px 24px 16px;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #a5b4fc;
+      margin-bottom: 2px;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: #71717a;
+      margin-bottom: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+    }
+
+    td {
+      padding: 4px 0;
+      font-size: 12px;
+      color: #d4d4d8;
+      vertical-align: middle;
+    }
+
+    td:first-child { width: 145px; }
+
+    kbd {
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-family: 'Consolas', monospace;
+      font-size: 11px;
+      color: #f4f4f5;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    button {
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 8px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover { background: #4338ca; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">LazyWords</div>
+    <div class="subtitle" data-i18n="onboarding.subtitle">Passive vocabulary trainer started</div>
+
+    <table>
+      <tr><td><kbd>Ctrl+Shift+P</kbd></td><td data-i18n="onboarding.hotkey.pause">Pause / resume</td></tr>
+      <tr><td><kbd>Ctrl+Shift+N</kbd></td><td data-i18n="onboarding.hotkey.next">Next word</td></tr>
+      <tr><td><kbd>Ctrl+Shift+K</kbd></td><td data-i18n="onboarding.hotkey.know">Know — remove from rotation</td></tr>
+      <tr><td><kbd>Ctrl+Shift+W</kbd></td><td data-i18n="onboarding.hotkey.settings">Open settings</td></tr>
+    </table>
+
+    <div class="footer">
+      <button id="btn-ok" data-i18n="onboarding.start">Start</button>
+    </div>
+  </div>
+
+  <script src="../../tauri-api.js"></script>
+  <script>
+    document.getElementById('btn-ok').addEventListener('click', () => window.close());
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') window.close(); });
+
+    // Fetch locale directly — no need to wait for an event
+    window.api.getLocale().then(({ strings }) => {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (strings[key] !== undefined) el.textContent = strings[key];
+      });
+    });
+  </script>
+</body>
+</html>
