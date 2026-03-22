@@ -109,3 +109,14 @@ Run with `cd src-tauri && cargo test` (24 tests, ~0.01 s).
 | `settings.rs` | Default values match expected constants; round-trip JSON serialization/deserialization is lossless |
 
 **No JS tests.** `src/modules/` contains legacy Electron stubs not used by the Tauri app; `src/windows/` and `src/tauri-api.js` are thin UI/IPC glue with no testable logic independent of the Tauri runtime.
+
+## CI/CD
+
+**Repository**: https://github.com/DemonazGH/LazyWords-Tauri
+
+**Workflow**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — runs on every push and pull_request to `main`.
+
+- Runs on `ubuntu-latest`
+- Installs stable Rust via `dtolnay/rust-toolchain@stable`
+- Installs required Linux GTK/WebKit2 system dependencies for Tauri
+- Runs `cargo test` in `src-tauri/` — executes all 24 unit tests across 5 modules (`word_engine`, `dictionary_loader`, `stats`, `i18n`, `settings`)
