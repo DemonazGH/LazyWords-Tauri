@@ -41,5 +41,4 @@ pnpm-debug.log*
 data/
 
 # Build scratch/error logs
-src-tauri/build_errors*.txt
-src-tauri/err.txt
+src-tauri/*.txt
