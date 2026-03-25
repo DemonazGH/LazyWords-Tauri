@@ -131,8 +131,8 @@ pub fn get_learned_list(state: State<'_, AppState>) -> Value {
         for &idx in indices {
             if let Some(w) = engine.dictionary.get(idx) {
                 words.push(serde_json::json!({
-                    "word": w.word,
-                    "translation": w.translation,
+                    "term": w.term,
+                    "definition": w.definition,
                     "index": idx
                 }));
             }
@@ -383,7 +383,9 @@ pub fn delete_dictionary(app: AppHandle, state: State<'_, AppState>, id: String)
         let mut settings = state.settings.lock().unwrap();
         let switched = settings.active_dictionary == id;
         if switched {
-            settings.active_dictionary = "ngsl_en_ru".to_string();
+            // Fall back to first still-available dictionary, or empty string
+            let fallback = get_all_dict_ids(&app).into_iter().next().unwrap_or_default();
+            settings.active_dictionary = fallback;
             let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
             crate::settings::save_settings(&path, &settings);
         }

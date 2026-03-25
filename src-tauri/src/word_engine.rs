@@ -4,8 +4,10 @@ use rand::seq::SliceRandom;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordEntry {
-    pub word: String,
-    pub translation: String,
+    #[serde(alias = "word", alias = "front")]
+    pub term: String,
+    #[serde(alias = "translation", alias = "back")]
+    pub definition: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,9 +65,9 @@ mod tests {
 
     fn make_engine(words: &[(&str, &str)]) -> WordEngine {
         let mut engine = WordEngine::new();
-        engine.load_dictionary(words.iter().map(|&(w, t)| WordEntry {
-            word: w.to_string(),
-            translation: t.to_string(),
+        engine.load_dictionary(words.iter().map(|&(t, d)| WordEntry {
+            term: t.to_string(),
+            definition: d.to_string(),
         }).collect());
         engine
     }
@@ -74,7 +76,7 @@ mod tests {
     fn random_word_returns_from_dictionary() {
         let engine = make_engine(&[("hello", "привет"), ("world", "мир")]);
         let result = engine.get_random_word().unwrap();
-        assert!(result.entry.word == "hello" || result.entry.word == "world");
+        assert!(result.entry.term == "hello" || result.entry.term == "world");
     }
 
     #[test]
@@ -83,7 +85,7 @@ mod tests {
         engine.set_learned(vec![0]);
         for _ in 0..50 {
             let word = engine.get_random_word().unwrap();
-            assert_ne!(word.entry.word, "hello");
+            assert_ne!(word.entry.term, "hello");
             assert_eq!(word.index, 1);
         }
     }

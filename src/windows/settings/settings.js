@@ -247,8 +247,8 @@ function renderLearnedList() {
   const query = search.value.trim().toLowerCase();
   const filtered = query
     ? allLearnedWords.filter(w =>
-        w.word.toLowerCase().includes(query) ||
-        w.translation.toLowerCase().includes(query))
+        w.term.toLowerCase().includes(query) ||
+        w.definition.toLowerCase().includes(query))
     : allLearnedWords;
 
   const expandedBySearch = query.length > 0;
@@ -261,12 +261,12 @@ function renderLearnedList() {
   list.innerHTML = '';
 
   const restoreLabel = L['settings.learned.restore'] ?? 'Restore';
-  visible.forEach(({ word, translation, index }) => {
+  visible.forEach(({ term, definition, index }) => {
     const li = document.createElement('li');
     li.innerHTML = `
       <div class="word-pair">
-        <span class="word">${escHtml(word)}</span>
-        <span class="translation">${escHtml(translation)}</span>
+        <span class="term">${escHtml(term)}</span>
+        <span class="definition">${escHtml(definition)}</span>
       </div>
       <button class="btn-restore" data-index="${index}">${escHtml(restoreLabel)}</button>
     `;

@@ -110,7 +110,7 @@ mod tests {
         let mut i18n = test_i18n();
         i18n.set_locale("en");
         // Substitution is handled in JS; Rust returns the raw template string intact
-        assert_eq!(i18n.t("settings.import.success"), "Imported: {n} words");
+        assert_eq!(i18n.t("settings.import.success"), "Imported: {n} cards");
     }
 
     #[test]

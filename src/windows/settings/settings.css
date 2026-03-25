@@ -214,7 +214,7 @@ header {
   font-size: 12px;
 }
 
-.learned-list .word { font-weight: 600; color: #f4f4f5; }
+.learned-list .term { font-weight: 600; color: #f4f4f5; }
 
 .learned-list .btn-restore {
   background: none;

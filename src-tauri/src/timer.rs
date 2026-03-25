@@ -145,8 +145,14 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
 
 pub fn start_loop(app_handle: AppHandle) {
     tauri::async_runtime::spawn(async move {
-        let mut skip_interval = false;
+        let mut skip_interval = true; // show first card immediately on startup
         loop {
+            // ── Idle: no dictionary selected yet (onboarding) ─────────────────
+            if app_handle.state::<AppState>().settings.lock().unwrap().active_dictionary.is_empty() {
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                continue;
+            }
+
             // ── Idle: all dictionaries exhausted ──────────────────────────────
             if *app_handle.state::<AppState>().all_dicts_done.lock().unwrap() {
                 tokio::time::sleep(Duration::from_secs(30)).await;
@@ -204,8 +210,8 @@ pub fn start_loop(app_handle: AppHandle) {
 
                 // Show word (include index so card.js can pass it back for mark_learned)
                 let _ = app_handle.emit("show-word", serde_json::json!({
-                    "word": word.entry.word,
-                    "translation": word.entry.translation,
+                    "term": word.entry.term,
+                    "definition": word.entry.definition,
                     "index": word.index
                 }));
 

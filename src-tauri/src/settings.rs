@@ -24,7 +24,7 @@ impl Default for Settings {
             show_duration: 4.0,
             interval: 3.0,
             fade_duration: 0.5,
-            active_dictionary: "ngsl_en_ru".to_string(),
+            active_dictionary: String::new(),
             auto_start: true,
             first_launch: true,
             language: "auto".to_string(),
@@ -64,7 +64,7 @@ mod tests {
         assert_eq!(s.interval, 3.0);
         assert_eq!(s.font_size, 22.0);
         assert_eq!(s.show_duration, 4.0);
-        assert_eq!(s.active_dictionary, "ngsl_en_ru");
+        assert_eq!(s.active_dictionary, "");
         assert_eq!(s.position, "center");
         assert_eq!(s.language, "auto");
         assert!(s.auto_start);

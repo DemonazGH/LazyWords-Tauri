@@ -116,8 +116,26 @@ pub fn run() {
         .setup(|app| {
             let state = state::init_state(&app.handle());
 
-            // Load active dictionary + apply persisted learned indices
-            let active_dict = state.settings.lock().unwrap().active_dictionary.clone();
+            // Load active dictionary + apply persisted learned indices.
+            // If the saved dict ID can't be found (e.g. renamed file), fall back to the
+            // first available dictionary and persist the corrected setting.
+            let active_dict = {
+                let saved = state.settings.lock().unwrap().active_dictionary.clone();
+                if !saved.is_empty() && commands::load_dictionary_by_id(&app.handle(), &saved).is_none() {
+                    // Saved dict missing — migrate to first available
+                    let fallback = commands::get_all_dict_ids(&app.handle())
+                        .into_iter().next().unwrap_or_default();
+                    if !fallback.is_empty() {
+                        let mut settings = state.settings.lock().unwrap();
+                        settings.active_dictionary = fallback.clone();
+                        let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
+                        crate::settings::save_settings(&path, &settings);
+                    }
+                    fallback
+                } else {
+                    saved
+                }
+            };
             if let Some(words) = commands::load_dictionary_by_id(&app.handle(), &active_dict) {
                 let mut engine = state.word_engine.lock().unwrap();
                 engine.load_dictionary(words);
@@ -165,7 +183,7 @@ pub fn run() {
                     tauri::WebviewUrl::App("windows/onboarding/onboarding.html".into()),
                 )
                 .title("LazyWords")
-                .inner_size(380.0, 270.0)
+                .inner_size(420.0, 320.0)
                 .decorations(false)
                 .transparent(true)
                 .shadow(false)
@@ -208,6 +226,7 @@ pub fn run() {
                             if window.is_visible().unwrap_or(false) {
                                 let _ = window.hide();
                             } else {
+                                let _ = window.unminimize();
                                 let _ = window.show();
                                 let _ = window.set_focus();
                             }
@@ -220,6 +239,7 @@ pub fn run() {
                             .title("LazyWords Settings")
                             .inner_size(800.0, 600.0)
                             .shadow(false)
+                            .focused(true)
                             .build();
                         }
 
@@ -250,8 +270,8 @@ pub fn run() {
                                 reposition_window(&window, &pos);
                             }
                             let _ = app.emit("show-word", serde_json::json!({
-                                "word": word.entry.word,
-                                "translation": word.entry.translation,
+                                "term": word.entry.term,
+                                "definition": word.entry.definition,
                                 "index": word.index
                             }));
                         }

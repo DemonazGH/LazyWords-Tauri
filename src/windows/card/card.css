@@ -34,7 +34,7 @@ html, body {
   opacity: 1;
 }
 
-#word {
+#term {
   color: #FFFFFF;
   font-family: -apple-system, 'Segoe UI', sans-serif;
   font-size: 22px;
@@ -43,7 +43,7 @@ html, body {
   letter-spacing: 0.3px;
 }
 
-#translation {
+#definition {
   color: #A0A0A8;
   font-family: -apple-system, 'Segoe UI', sans-serif;
   font-size: 15px;

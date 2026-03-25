@@ -1,21 +1,21 @@
 // card.js — renderer process for the word card overlay
 
 const cardEl = document.getElementById('card');
-const wordEl = document.getElementById('word');
-const translationEl = document.getElementById('translation');
+const termEl = document.getElementById('term');
+const definitionEl = document.getElementById('definition');
 
 let currentSettings = {};
 let hideTimer = null;
-let currentWordIndex = null; // index of the currently displayed word (null when hidden)
+let currentWordIndex = null; // index of the currently displayed card (null when hidden)
 let isCardVisible = false;
 
 async function init() {
   currentSettings = await window.api.getSettings();
   applySettings(currentSettings);
 
-  window.api.onShowWord(({ word, translation, index }) => {
-    wordEl.textContent = word;
-    translationEl.textContent = translation;
+  window.api.onShowWord(({ term, definition, index }) => {
+    termEl.textContent = term;
+    definitionEl.textContent = definition;
     currentWordIndex = index ?? null;
     showCardTemporarily();
   });
@@ -30,27 +30,27 @@ async function init() {
   });
 
   window.api.onAllLearned(({ headline, dictLabel, dictName }) => {
-    currentWordIndex = null; // status card — not a learnable word
-    wordEl.textContent = headline ?? 'All words learned! 🎉';
-    translationEl.textContent = `${dictLabel ?? 'Dictionary:'} ${dictName ?? ''}`;
+    currentWordIndex = null; // status card — not a learnable entry
+    termEl.textContent = headline ?? 'All cards learned! 🎉';
+    definitionEl.textContent = `${dictLabel ?? 'Dictionary:'} ${dictName ?? ''}`;
     showCardTemporarily();
   });
 
   window.api.onSwitchedDict(({ headline, dictName }) => {
     currentWordIndex = null;
-    wordEl.textContent = headline ?? 'Switched to:';
-    translationEl.textContent = dictName ?? '';
+    termEl.textContent = headline ?? 'Switched to:';
+    definitionEl.textContent = dictName ?? '';
     showCardTemporarily();
   });
 
   window.api.onAllDictsLearned(({ headline, sub }) => {
     currentWordIndex = null;
-    wordEl.textContent = headline ?? 'All dictionaries learned! 🎉';
-    translationEl.textContent = sub ?? 'Restore words in settings';
+    termEl.textContent = headline ?? 'All dictionaries learned! 🎉';
+    definitionEl.textContent = sub ?? 'Restore cards in settings';
     showCardTemporarily();
   });
 
-  // Ctrl+Shift+K: mark current word as learned
+  // Ctrl+Shift+K: mark current card as learned
   window.api.onMarkKnown(() => {
     if (!isCardVisible || currentWordIndex === null) return;
     const idx = currentWordIndex;
@@ -61,7 +61,7 @@ async function init() {
 }
 
 function applySettings(settings) {
-  wordEl.style.fontSize = `${settings.fontSize ?? 22}px`;
+  termEl.style.fontSize = `${settings.fontSize ?? 22}px`;
   cardEl.style.transition = `opacity ${settings.fadeDuration ?? 0.5}s ease`;
 }
 
