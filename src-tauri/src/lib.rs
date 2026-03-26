@@ -6,6 +6,7 @@ mod state;
 mod commands;
 mod i18n;
 mod timer;
+mod tray;
 
 use tauri::Manager;
 use tauri::Emitter;
@@ -147,6 +148,13 @@ pub fn run() {
             let first_launch = state.settings.lock().unwrap().first_launch;
             app.manage(state);
 
+            // ── System tray ──
+            {
+                let tray_icon = tray::create_tray(&app.handle())?;
+                let app_state = app.state::<crate::state::AppState>();
+                *app_state.tray.lock().unwrap() = Some(tray_icon);
+            }
+
             // ── Card window (small transparent overlay) ──
             let card_window = tauri::WebviewWindowBuilder::new(
                 app,
@@ -248,9 +256,12 @@ pub fn run() {
                         if let Some(ob) = app.get_webview_window("onboarding") {
                             let _ = ob.close();
                         }
-                        let state = app.state::<crate::state::AppState>();
-                        let mut paused = state.is_paused.lock().unwrap();
-                        *paused = !*paused;
+                        {
+                            let state = app.state::<crate::state::AppState>();
+                            let mut paused = state.is_paused.lock().unwrap();
+                            *paused = !*paused;
+                        }
+                        tray::refresh_tray(app);
 
                     } else if shortcut == &n {
                         // Dismiss onboarding; implicit unpause

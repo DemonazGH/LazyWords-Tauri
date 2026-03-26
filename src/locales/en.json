@@ -72,5 +72,11 @@
   "onboarding.hotkey.next": "Next card",
   "onboarding.hotkey.know": "Mark as learned — remove from rotation",
   "onboarding.hotkey.settings": "Open settings",
-  "onboarding.start": "Start"
+  "onboarding.start": "Start",
+  "tray.pause": "Pause",
+  "tray.resume": "Resume",
+  "tray.next": "Next word",
+  "tray.dictionary": "Dictionary",
+  "tray.settings": "Settings",
+  "tray.quit": "Quit"
 }

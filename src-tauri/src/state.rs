@@ -21,6 +21,8 @@ pub struct AppState {
     pub all_dicts_done: Mutex<bool>,
     /// Fired by mark_learned when it sets all_learned = true, to wake the timer early.
     pub all_learned_notify: tokio::sync::Notify,
+    /// Handle to the system tray icon so it can be updated from anywhere.
+    pub tray: Mutex<Option<tauri::tray::TrayIcon>>,
 }
 
 pub fn init_state(app: &AppHandle) -> AppState {
@@ -65,5 +67,6 @@ pub fn init_state(app: &AppHandle) -> AppState {
         all_learned: Mutex::new(false),
         all_dicts_done: Mutex::new(false),
         all_learned_notify: tokio::sync::Notify::new(),
+        tray: Mutex::new(None),
     }
 }

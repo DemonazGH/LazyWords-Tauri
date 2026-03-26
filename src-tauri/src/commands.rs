@@ -60,12 +60,15 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
     let _ = app.emit("update-settings", &settings_json);
 
     if new_lang != old_lang {
-        let mut i18n = state.i18n.lock().unwrap();
-        i18n.set_locale(&new_lang);
-        let _ = app.emit("locale-updated", serde_json::json!({
-            "locale": i18n.current_locale,
-            "strings": i18n.get_strings()
-        }));
+        {
+            let mut i18n = state.i18n.lock().unwrap();
+            i18n.set_locale(&new_lang);
+            let _ = app.emit("locale-updated", serde_json::json!({
+                "locale": i18n.current_locale,
+                "strings": i18n.get_strings()
+            }));
+        }
+        crate::tray::refresh_tray(&app);
     }
 
     if new_dict != old_dict {

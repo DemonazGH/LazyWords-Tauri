@@ -72,5 +72,11 @@
   "onboarding.hotkey.next": "Следующая карточка",
   "onboarding.hotkey.know": "Отметить как изученное — убрать из ротации",
   "onboarding.hotkey.settings": "Открыть настройки",
-  "onboarding.start": "Начать"
+  "onboarding.start": "Начать",
+  "tray.pause": "Пауза",
+  "tray.resume": "Продолжить",
+  "tray.next": "Следующее слово",
+  "tray.dictionary": "Словарь",
+  "tray.settings": "Настройки",
+  "tray.quit": "Выйти"
 }
