@@ -188,11 +188,20 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                     let pos = state.settings.lock().unwrap().position.clone();
                     crate::reposition_window(&window, &pos);
                 }
+                // Record shown stat
+                {
+                    let mut tracker = state.stats_tracker.lock().unwrap();
+                    tracker.record_shown();
+                    crate::commands::save_stats_to_disk(app, &tracker.stats);
+                }
+                let _ = app.emit("stats-updated", ());
                 let _ = app.emit("show-word", serde_json::json!({
                     "term": word.entry.term,
                     "definition": word.entry.definition,
                     "index": word.index
                 }));
+                // Signal timer to reset its interval (prevents double card)
+                state.manual_trigger.notify_one();
             }
             refresh_tray(app);
         }
@@ -210,6 +219,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                 .title("LazyWords Settings")
                 .inner_size(800.0, 600.0)
                 .shadow(false)
+                .skip_taskbar(false)
                 .focused(true)
                 .build();
             }

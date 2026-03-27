@@ -171,12 +171,18 @@ pub fn start_loop(app_handle: AppHandle) {
                 skip_interval = false;
             } else {
                 let mut waited = 0.0f32;
-                loop {
+                let mut manual = false;
+                'interval: loop {
                     let interval_secs = app_handle.state::<AppState>().settings.lock().unwrap().interval * 60.0;
                     if waited >= interval_secs { break; }
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                    waited += 1.0;
+                    let app_state = app_handle.state::<AppState>();
+                    tokio::select! {
+                        _ = tokio::time::sleep(Duration::from_secs(1)) => { waited += 1.0; }
+                        _ = app_state.manual_trigger.notified() => { manual = true; break 'interval; }
+                    }
                 }
+                // Manual trigger fired — card already shown by shortcut/tray; reset interval
+                if manual { continue; }
             }
 
             // Skip if paused

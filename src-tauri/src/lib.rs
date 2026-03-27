@@ -10,6 +10,7 @@ mod tray;
 
 use tauri::Manager;
 use tauri::Emitter;
+use tauri_plugin_autostart::ManagerExt as AutostartManagerExt;
 
 // ── Window positioning (multi-monitor aware) ──────────────────────────────────
 
@@ -146,7 +147,18 @@ pub fn run() {
             }
 
             let first_launch = state.settings.lock().unwrap().first_launch;
+            let auto_start = state.settings.lock().unwrap().auto_start;
             app.manage(state);
+
+            // ── Sync autostart state with plugin ──
+            {
+                let autolaunch = app.autolaunch();
+                if auto_start {
+                    let _ = autolaunch.enable();
+                } else {
+                    let _ = autolaunch.disable();
+                }
+            }
 
             // ── System tray ──
             {
@@ -195,6 +207,7 @@ pub fn run() {
                 .decorations(false)
                 .transparent(true)
                 .shadow(false)
+                .skip_taskbar(true)
                 .center()
                 .resizable(false)
                 .build();
@@ -247,6 +260,7 @@ pub fn run() {
                             .title("LazyWords Settings")
                             .inner_size(800.0, 600.0)
                             .shadow(false)
+                            .skip_taskbar(false)
                             .focused(true)
                             .build();
                         }
@@ -280,11 +294,20 @@ pub fn run() {
                                 let pos = state.settings.lock().unwrap().position.clone();
                                 reposition_window(&window, &pos);
                             }
+                            // Record shown stat
+                            {
+                                let mut tracker = state.stats_tracker.lock().unwrap();
+                                tracker.record_shown();
+                                commands::save_stats_to_disk(app, &tracker.stats);
+                            }
+                            let _ = app.emit("stats-updated", ());
                             let _ = app.emit("show-word", serde_json::json!({
                                 "term": word.entry.term,
                                 "definition": word.entry.definition,
                                 "index": word.index
                             }));
+                            // Signal timer to reset its interval (prevents double card)
+                            state.manual_trigger.notify_one();
                         }
 
                     } else if shortcut == &k {

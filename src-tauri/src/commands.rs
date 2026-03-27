@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_autostart::ManagerExt as AutostartManagerExt;
 
 use crate::state::AppState;
 use crate::settings::Settings;
@@ -37,6 +38,7 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
     let mut current = state.settings.lock().unwrap();
     let old_dict = current.active_dictionary.clone();
     let old_lang = current.language.clone();
+    let old_auto_start = current.auto_start;
 
     if let Value::Object(mut current_map) = serde_json::to_value(&*current).unwrap_or(Value::Null) {
         if let Value::Object(new_map) = new_settings {
@@ -54,10 +56,20 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
 
     let new_lang = current.language.clone();
     let new_dict = current.active_dictionary.clone();
+    let new_auto_start = current.auto_start;
     let settings_json = serde_json::to_value(&*current).unwrap_or(Value::Null);
     drop(current);
 
     let _ = app.emit("update-settings", &settings_json);
+
+    if new_auto_start != old_auto_start {
+        let autolaunch = app.autolaunch();
+        if new_auto_start {
+            let _ = autolaunch.enable();
+        } else {
+            let _ = autolaunch.disable();
+        }
+    }
 
     if new_lang != old_lang {
         {
