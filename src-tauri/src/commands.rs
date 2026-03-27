@@ -82,6 +82,24 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
         // Clear both learned flags when dictionary changes
         *state.all_learned.lock().unwrap() = false;
         *state.all_dicts_done.lock().unwrap() = false;
+
+        // After onboarding: dict was empty, now it has a value — show first card immediately
+        if old_dict.is_empty() {
+            let entry = state.word_engine.lock().unwrap().get_random_word();
+            if let Some(word) = entry {
+                *state.current_word.lock().unwrap() = Some(word.clone());
+                *state.is_card_visible.lock().unwrap() = true;
+                if let Some(window) = app.get_webview_window("main") {
+                    let pos = state.settings.lock().unwrap().position.clone();
+                    crate::reposition_window(&window, &pos);
+                }
+                let _ = app.emit("show-word", serde_json::json!({
+                    "term": word.entry.term,
+                    "definition": word.entry.definition,
+                    "index": word.index
+                }));
+            }
+        }
     }
 
     true

@@ -22,6 +22,14 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": {
+      "icons/icon.png": "icons/icon.png",
+      "../src/dictionaries/en-ru.csv": "dictionaries/en-ru.csv",
+      "../src/dictionaries/en-definitions.csv": "dictionaries/en-definitions.csv",
+      "../src/dictionaries/en-irregular-verbs.csv": "dictionaries/en-irregular-verbs.csv",
+      "../src/locales/en.json": "locales/en.json",
+      "../src/locales/ru.json": "locales/ru.json"
+    }
   }
 }
