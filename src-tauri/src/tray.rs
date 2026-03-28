@@ -207,6 +207,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
         }
         "settings" => {
             if let Some(window) = app.get_webview_window("settings") {
+                crate::center_on_cursor_monitor(&window);
                 let _ = window.set_skip_taskbar(false);
                 let _ = window.unminimize();
                 let _ = window.show();

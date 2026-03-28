@@ -77,6 +77,43 @@ pub fn reposition_window(window: &tauri::WebviewWindow, position: &str) {
     }
 }
 
+/// Center a window on whichever monitor contains the cursor.
+fn center_on_cursor_monitor(window: &tauri::WebviewWindow) {
+    let win_size = window.inner_size().unwrap_or(tauri::PhysicalSize::new(800, 600));
+    let width = win_size.width as i32;
+    let height = win_size.height as i32;
+
+    let monitor = {
+        let cursor = window.cursor_position().ok();
+        if let Some(pos) = cursor {
+            window.available_monitors()
+                .unwrap_or_default()
+                .into_iter()
+                .find(|m| {
+                    let mp = m.position();
+                    let ms = m.size();
+                    pos.x >= mp.x as f64
+                        && pos.x < (mp.x + ms.width as i32) as f64
+                        && pos.y >= mp.y as f64
+                        && pos.y < (mp.y + ms.height as i32) as f64
+                })
+        } else {
+            None
+        }
+    }
+    .or_else(|| window.current_monitor().ok().flatten());
+
+    if let Some(monitor) = monitor {
+        let mp = monitor.position();
+        let ms = monitor.size();
+        let x = mp.x + (ms.width as i32 - width) / 2;
+        let y = mp.y + (ms.height as i32 - height) / 2;
+        let _ = window.set_position(tauri::Position::Physical(
+            tauri::PhysicalPosition::new(x, y),
+        ));
+    }
+}
+
 // ── Single-instance lock (Windows: named mutex) ───────────────────────────────
 
 #[cfg(target_os = "windows")]
@@ -187,7 +224,7 @@ pub fn run() {
             let _ = card_window.set_ignore_cursor_events(true);
 
             // ── Settings window (pre-created hidden to avoid first-open freeze) ──
-            let _ = tauri::WebviewWindowBuilder::new(
+            let settings_window = tauri::WebviewWindowBuilder::new(
                 app,
                 "settings",
                 tauri::WebviewUrl::App("windows/settings/settings.html".into()),
@@ -197,7 +234,20 @@ pub fn run() {
             .shadow(false)
             .skip_taskbar(true)
             .visible(false)
-            .build();
+            .build()
+            .unwrap();
+
+            // Intercept close → hide so the window is reused, never destroyed
+            {
+                let sw = settings_window.clone();
+                settings_window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = sw.hide();
+                        let _ = sw.set_skip_taskbar(true);
+                    }
+                });
+            }
 
             // ── Onboarding window on first launch ──
             if first_launch {
@@ -261,6 +311,7 @@ pub fn run() {
                                 let _ = window.hide();
                                 let _ = window.set_skip_taskbar(true);
                             } else {
+                                center_on_cursor_monitor(&window);
                                 let _ = window.set_skip_taskbar(false);
                                 let _ = window.unminimize();
                                 let _ = window.show();
