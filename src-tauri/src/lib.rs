@@ -186,6 +186,19 @@ pub fn run() {
 
             let _ = card_window.set_ignore_cursor_events(true);
 
+            // ── Settings window (pre-created hidden to avoid first-open freeze) ──
+            let _ = tauri::WebviewWindowBuilder::new(
+                app,
+                "settings",
+                tauri::WebviewUrl::App("windows/settings/settings.html".into()),
+            )
+            .title("LazyWords Settings")
+            .inner_size(800.0, 600.0)
+            .shadow(false)
+            .skip_taskbar(true)
+            .visible(false)
+            .build();
+
             // ── Onboarding window on first launch ──
             if first_launch {
                 // Mark first_launch = false immediately so it never repeats
@@ -246,23 +259,13 @@ pub fn run() {
                         if let Some(window) = app.get_webview_window("settings") {
                             if window.is_visible().unwrap_or(false) {
                                 let _ = window.hide();
+                                let _ = window.set_skip_taskbar(true);
                             } else {
+                                let _ = window.set_skip_taskbar(false);
                                 let _ = window.unminimize();
                                 let _ = window.show();
                                 let _ = window.set_focus();
                             }
-                        } else {
-                            let _ = tauri::WebviewWindowBuilder::new(
-                                app,
-                                "settings",
-                                tauri::WebviewUrl::App("windows/settings/settings.html".into()),
-                            )
-                            .title("LazyWords Settings")
-                            .inner_size(800.0, 600.0)
-                            .shadow(false)
-                            .skip_taskbar(false)
-                            .focused(true)
-                            .build();
                         }
 
                     } else if shortcut == &p {

@@ -110,6 +110,8 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
                     "definition": word.entry.definition,
                     "index": word.index
                 }));
+                // Tell timer to reset its interval — prevents it from also firing immediately
+                state.manual_trigger.notify_one();
             }
         }
     }

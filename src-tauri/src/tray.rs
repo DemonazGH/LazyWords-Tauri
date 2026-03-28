@@ -207,21 +207,10 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
         }
         "settings" => {
             if let Some(window) = app.get_webview_window("settings") {
+                let _ = window.set_skip_taskbar(false);
                 let _ = window.unminimize();
                 let _ = window.show();
                 let _ = window.set_focus();
-            } else {
-                let _ = tauri::WebviewWindowBuilder::new(
-                    app,
-                    "settings",
-                    tauri::WebviewUrl::App("windows/settings/settings.html".into()),
-                )
-                .title("LazyWords Settings")
-                .inner_size(800.0, 600.0)
-                .shadow(false)
-                .skip_taskbar(false)
-                .focused(true)
-                .build();
             }
         }
         "quit" => {
