@@ -25,5 +25,6 @@ window.api = {
   onLocale: (cb) => listen('locale-data', (e) => cb(e.payload)),
   onStatsUpdated: (cb) => listen('stats-updated', () => cb()),
   onDictAutoSwitched: (cb) => listen('dict-auto-switched', (e) => cb(e.payload)),
-  onLocaleUpdated: (cb) => listen('locale-updated', (e) => cb(e.payload))
+  onLocaleUpdated: (cb) => listen('locale-updated', (e) => cb(e.payload)),
+  onDictListUpdated: (cb) => listen('dict-list-updated', () => cb())
 };

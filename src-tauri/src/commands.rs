@@ -388,6 +388,7 @@ pub fn import_dictionary(app: AppHandle, _state: State<'_, AppState>) -> Value {
             return serde_json::json!({ "error": format!("Failed to copy file: {}", e) });
         }
 
+        let _ = app.emit("dict-list-updated", ());
         return serde_json::json!({ "id": id, "wordCount": words.len() });
     }
 
