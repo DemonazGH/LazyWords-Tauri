@@ -271,6 +271,8 @@ pub fn run() {
                 .transparent(true)
                 .shadow(false)
                 .skip_taskbar(true)
+                .always_on_top(true)
+                .focused(true)
                 .center()
                 .resizable(false)
                 .build();

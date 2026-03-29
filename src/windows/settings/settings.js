@@ -435,6 +435,18 @@ async function init() {
     // Refresh dictionary list to update "(import)" label in current locale
     loadDictionaries(currentSettings.activeDictionary);
   });
+
+  // Refresh data every time the settings window becomes visible
+  // (covers dicts imported from onboarding, tray dict switches, etc.)
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+      const settings = await window.api.getSettings();
+      currentSettings = settings;
+      document.getElementById('activeDictionary').value = settings.activeDictionary;
+      await loadDictionaries(settings.activeDictionary);
+      await loadLearnedList();
+    }
+  });
 }
 
 init();
