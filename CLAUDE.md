@@ -46,8 +46,8 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 | File | Contents |
 |---|---|
 | `en-ru.csv` | ~2809 NGSL English words → Russian translations |
-| `en-definitions.csv` | ~50 common English words with English definitions |
-| `en-irregular-verbs.csv` | ~50 common English irregular verbs (past / past participle) |
+| `en-definitions.csv` | ~2809 NGSL words with short English definitions |
+| `en-irregular-verbs.csv` | ~200 complete English irregular verbs (base / past / past participle) |
 
 ### Backend (src-tauri/src/)
 
@@ -56,27 +56,38 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 - `word_engine` – holds loaded dictionary + `HashSet<usize>` of learned card indices
 - `stats_tracker` – daily/streak statistics
 - `learned` – `HashMap<dict_name, Vec<usize>>` persisted across sessions
-- `is_paused`, `is_card_visible`, `current_word`, `all_learned` – runtime state
+- `is_paused`, `is_card_visible`, `current_word`, `all_learned`, `all_dicts_done` – runtime state
+- `all_learned_notify` – wakes timer early when `mark_learned` sets `all_learned = true`
+- `manual_trigger` – wakes timer interval when `Ctrl+Shift+N` / tray "Next" shows a card manually
+- `tray` – `Option<TrayIcon>` handle for updating icon and menu from anywhere
 
 **Timer loop** (`timer.rs`) — the core async loop:
 - Sleeps 5 s/cycle when `active_dictionary` is empty (no dictionary selected yet)
 - Respects `all_learned` flag (sleeps 30 s/cycle when set instead of running)
 - Checks fullscreen app detection on Windows (skips card if foreground app is fullscreen)
 - Records `shown` stat + emits `stats-updated` on every card shown
+- Interval wait uses `tokio::select!` on 1 s sleep + `manual_trigger` Notify — when `Ctrl+Shift+N` or tray "Next" fires, the timer resets its interval (prevents double card)
 - When `get_random_word()` returns `None`: sets `all_learned = true`, emits `show-all-learned`, then scans all dictionaries for one with remaining cards — if found emits `show-switched-dict` + `dict-auto-switched` and resets; if not found emits `show-all-dicts-learned`
 
+**System tray** (`tray.rs`):
+- Tray icon with normal/dimmed (paused) states; tooltip "LazyWords"
+- Menu: Pause/Resume, Next word, Dictionary submenu (active dict has checkmark), Settings, Quit
+- All labels localized via `t()` — menu rebuilt on language change
+- Quit saves learned/stats/settings before `app.exit(0)`
+
 **Global shortcuts** (`lib.rs`):
-- `Ctrl+Shift+W` – toggle settings window (creates with `shadow(false)` if new)
-- `Ctrl+Shift+P` – pause/resume
-- `Ctrl+Shift+N` – implicit unpause + show next card immediately; adds `index` to payload
+- `Ctrl+Shift+W` – toggle settings window (show/hide pre-created window)
+- `Ctrl+Shift+P` – pause/resume; updates tray icon and menu
+- `Ctrl+Shift+N` – implicit unpause + show next card immediately; records `shown` stat; fires `manual_trigger` to reset timer interval
 - `Ctrl+Shift+K` – emits `mark-known-shortcut`; card.js handles it
 - All four shortcuts dismiss the onboarding window if it's open
 
 **Window management** (`lib.rs`):
 - Card window: `500×110px`, transparent, always-on-top, skip-taskbar, `shadow(false)`, ignore cursor events
-- Settings window: created on-demand, `shadow(false)`
-- Onboarding window: `420×320px`, transparent, decorations off, shown only when `first_launch = true`; flag cleared to `false` immediately on creation
+- Settings window: pre-created hidden at startup with `skip_taskbar(true)`; `CloseRequested` intercepted with `prevent_close()` + `hide()` so it is never destroyed; `center_on_cursor_monitor()` positions it on the active monitor before showing
+- Onboarding window: `420×320px`, transparent, decorations off, `skip_taskbar(true)`, shown only when `first_launch = true`; flag cleared to `false` immediately on creation
 - `reposition_window()` uses `window.cursor_position()` + `window.available_monitors()` to position the card on whichever monitor holds the cursor
+- `center_on_cursor_monitor()` centers a window on the monitor under the cursor (used for settings window)
 
 **IPC commands** (`commands.rs`):
 - `mark_learned(index)` — adds to learned, updates engine, records stat, saves both files, emits `stats-updated`, sets `all_learned` if no cards remain
@@ -144,3 +155,30 @@ Run with `cd src-tauri && cargo test` (27 tests, ~0.01 s).
 - Installs stable Rust via `dtolnay/rust-toolchain@stable`
 - Installs required Linux GTK/WebKit2 system dependencies for Tauri
 - Runs `cargo test` in `src-tauri/` — executes all 27 unit tests across 5 modules (`word_engine`, `dictionary_loader`, `stats`, `i18n`, `settings`)
+
+**Release workflow**: [`.github/workflows/release.yml`](.github/workflows/release.yml) — runs on tag push matching `v*`.
+
+- Runs on `windows-latest`
+- Builds production installer via `npm run tauri build`
+- Uploads `.msi` and `.exe` (NSIS) installers to a GitHub Release via `softprops/action-gh-release@v2`
+- Auto-generates release notes from commit messages
+
+## Known Bugs
+
+No known bugs as of v0.2.4. Previous issues (settings window freeze, double card after onboarding, settings opening only once, wrong-monitor placement) have been resolved.
+
+## Version History
+
+| Version | Changes |
+|---------|---------|
+| **v0.2.0** | System tray icon with localized menu (Pause/Resume, Next, Dictionary submenu, Settings, Quit); normal/dimmed icon states; CD workflow for auto-building installers on git tag |
+| **v0.2.1** | Bundle `icons/icon.png`, `dictionaries/*`, `locales/*` as resources (fixes tray icon, bundled dicts, locale files missing in production); show first card immediately after onboarding; add missing `card.allDictsLearned` / `card.restoreInSettings` locale keys |
+| **v0.2.2** | Wire `tauri-plugin-autostart` enable/disable; add `skip_taskbar(true)` to onboarding window; add `manual_trigger` Notify to prevent double card on `Ctrl+Shift+N`; record `shown` stat on manual next (shortcut + tray) |
+| **v0.2.3** | Pre-create settings window hidden at startup (fixes deadlock on first `Ctrl+Shift+W`); fire `manual_trigger` after onboarding first-card (fixes double card after onboarding) |
+| **v0.2.4** | Intercept `CloseRequested` on settings window with `prevent_close()` + `hide()` (fixes window only opening once); add `center_on_cursor_monitor()` to open settings on active monitor |
+
+## Planned Features
+
+- **Simplified spaced repetition (two levels)** — cards cycle through "new" and "seen" buckets with different intervals, without a full SRS algorithm
+- **Transcription support** — display phonetic transcription (IPA) alongside term/definition on cards *(deferred)*
+- **Export/import progress** — allow users to export and import their learned.json / stats.json for backup or device transfer *(deferred)*

@@ -1,51 +1,2810 @@
 term,definition
-ambiguous,having more than one possible meaning
-concise,expressing much in few words
-diligent,showing steady and careful effort
-eloquent,fluent and persuasive in speaking or writing
-frivolous,not having any serious purpose
-gregarious,fond of company; sociable
-hierarchy,a system in which items are ranked above one another
-infer,to reach a conclusion based on evidence
-justify,to show or prove something is right or reasonable
-lenient,not strict; tolerant
-meticulous,showing great attention to detail
-narrative,a spoken or written account of events
-obsolete,no longer in use; out of date
-pragmatic,dealing with things sensibly and realistically
-query,a question or inquiry
-resilient,able to recover quickly from difficulties
-scrutinize,to examine carefully and critically
-tacit,understood or implied without being stated
-ubiquitous,present or appearing everywhere
-valid,logically sound; legally acceptable
-arbitrary,based on random choice rather than reason
-benevolent,well-meaning and kind
-candid,truthful and straightforward
-deduce,to arrive at a conclusion by reasoning
-elaborate,to add more detail or explanation
-fabricate,to invent in order to deceive
-genuine,truly what it is claimed to be
-hypothesis,a proposed explanation to be tested
-incentive,something that motivates or encourages action
-jeopardize,to put at risk of loss or harm
-keen,eager; having a sharp mind
-lucid,expressed clearly; easy to understand
-mandatory,required by law or rules; compulsory
-negate,to make ineffective; to deny
-objective,not influenced by personal feelings; unbiased
-perceive,to become aware of through the senses
-quantify,to express as a number or amount
-relevant,closely connected to the matter at hand
-substantial,of considerable importance or size
-tedious,too long, slow, or dull; boring
-undermine,to weaken gradually from within
-vague,not clearly defined or stated
-wary,cautious about possible dangers
-yield,to produce or provide; to give way
-zeal,great energy or enthusiasm for a cause
-advocate,to publicly support or recommend something
-bias,an inclination or prejudice for or against something
-chronic,persisting for a long time
-discrepancy,a difference or inconsistency between facts
-exacerbate,to make a problem worse
+"a","the first letter of the alphabet, used as an article"
+abandon,to leave something completely and forever
+ability,the skill or power to do something
+able,having the skill or power to do something
+abortion,ending a pregnancy before birth
+about,concerning or relating to something
+above,higher than or over something else
+abroad,in or to a foreign country
+absence,the state of not being present
+"absolute","complete and total, without limits"
+absolutely,completely or totally
+"abstract","existing as an idea, not physical"
+abuse,to treat someone badly or harmfully
+academic,related to school or education
+accept,to agree to receive or do something
+acceptable,good enough to be allowed or approved
+access,the ability to enter or use something
+accident,an unexpected event causing harm or damage
+accommodation,a place to stay or live temporarily
+accompany,to go with someone as a companion
+accomplish,to successfully complete a task
+accord,agreement or harmony between people or things
+account,a record or report of something
+accurate,correct and free from mistakes
+accuse,to say someone did something wrong
+achieve,to successfully reach a goal
+achievement,something done successfully
+acknowledge,to accept or admit the truth of something
+acquire,to get or obtain something
+acquisition,the act of getting or gaining something
+across,from one side to the other side
+act,to do something or perform
+action,something done or performed
+active,engaged in activity or movement
+activity,something done for a purpose or fun
+actor,a person who performs in plays or movies
+actual,real or existing in fact
+"actually","in fact, really"
+ad,a short form of advertisement
+adapt,to change to fit new conditions
+add,to put something with something else
+addition,the act of adding something
+additional,more than what is usual or expected
+address,the place where someone lives or works
+adequate,enough for a particular need
+adjust,to change something slightly
+adjustment,a small change to improve something
+administration,the management of an organization or government
+admire,to respect or like someone or something
+admit,to agree that something is true
+adopt,to take something as your own
+adult,a fully grown person or animal
+advance,to move forward or make progress
+advantage,a benefit or favorable position
+adventure,an exciting or unusual experience
+advertise,to promote a product or service
+advertisement,a public notice promoting something
+advice,a suggestion about what to do
+advise,to give someone advice
+adviser,a person who gives advice
+advocate,to support or recommend something
+"affair","an event or situation, often personal"
+affect,to influence or change something
+afford,to have enough money to buy something
+afraid,feeling fear or worry
+after,following in time or place
+afternoon,the part of the day after noon
+again,one more time
+against,in opposition to something
+age,the length of time someone has lived
+agency,a business or organization that provides services
+agenda,a list of things to be done or discussed
+agent,a person who acts for another
+aggressive,ready to attack or confront
+ago,before the present time
+agree,to have the same opinion
+agreement,a shared decision or contract
+agricultural,related to farming or growing crops
+ahead,in front or forward in time
+aid,help or support
+aim,to point or direct something at a target
+air,the invisible gas we breathe around us
+aircraft,a vehicle that flies in the sky
+airline,a company that flies passengers by plane
+alarm,a warning sound or signal of danger
+album,a collection of songs or pictures
+alcohol,a drink that can make you drunk
+"alive","living, not dead"
+all,every one or everything
+allege,to say something without proof
+allow,to let someone do something
+ally,a friend or partner in a group
+"almost","nearly, but not completely"
+alone,without other people
+along,moving in a line beside something
+alongside,next to or together with
+already,before now or before a time
+alright,acceptable or okay
+"also","in addition, too"
+alter,to change something
+alternative,a different choice or option
+"although","even though, despite the fact"
+altogether,completely or in total
+"always","at all times, every time"
+amaze,to surprise someone greatly
+amendment,a change or addition to a law
+among,in the middle of a group
+amount,a quantity or number of something
+analysis,a detailed examination of something
+analyst,a person who studies information carefully
+analyze,to examine something in detail
+ancient,very old or from long ago
+and,used to connect words or ideas
+anger,a strong feeling of being mad
+angle,the space between two lines meeting
+angry,feeling mad or upset
+animal,a living creature that is not human
+announce,to make something known publicly
+announcement,a public statement or message
+annual,happening once every year
+another,one more or an additional one
+answer,a response to a question or problem
+anticipate,to expect or look forward to something
+anxiety,a feeling of worry or nervousness
+anxious,feeling worried or uneasy
+"any","one or some, no matter which"
+"anybody","any person, no matter who"
+"anymore","no longer, not now"
+"anyone","any person, no matter who"
+"anything","any object, event, or matter"
+"anyway","in any case, regardless of other things"
+anywhere,in or to any place
+apart,separated by distance or space
+apartment,a set of rooms for living in a building
+apologize,to say sorry for a mistake or offense
+apparent,clearly visible or understood
+apparently,seemingly or as far as one knows
+appeal,to ask for help or support
+appear,to come into sight or become visible
+appearance,the way someone or something looks
+application,a formal request or use of something
+apply,to make a formal request or use something
+appoint,to choose someone for a job or role
+appointment,a scheduled meeting or arrangement
+appreciate,to recognize the value or importance of
+approach,to come near or move toward something
+appropriate,suitable or proper for a situation
+approval,the act of agreeing or accepting
+approve,to agree with or accept something
+"approximately","about or nearly, not exact"
+architecture,the design and style of buildings
+area,a particular region or part of a place
+argue,to give reasons for or against something
+argument,a reason or set of reasons given to support an
+arise,to come up or begin to exist
+arm,the part of the body between shoulder and hand
+army,a large group of soldiers
+around,located on every side or nearby
+arrange,to put things in a certain order or plan
+arrangement,a plan or preparation for something
+arrest,to stop someone by legal authority
+arrival,the act of coming to a place
+arrive,to reach a place
+art,creative work like painting or music
+article,a piece of writing in a newspaper
+artist,a person who creates art
+as,used to show comparison or role
+ashamed,feeling bad about something done
+aside,to one side or out of the way
+ask,to request information or help
+assess,to evaluate or judge something
+assessment,the process of evaluating something
+asset,a useful or valuable thing or person
+assign,to give someone a task or job
+assist,to help someone
+assistance,help or support given to someone
+assistant,a person who helps another
+associate,to connect or link with something
+association,a group of people with a common purpose
+assume,to accept something as true without proof
+assumption,something accepted as true without proof
+assure,to tell someone something confidently
+at,used to show a location or time
+athlete,a person who competes in sports
+atmosphere,the air around the Earth or mood of a place
+attach,to fasten or join something to another
+attachment,something fastened or added to something else
+attack,to try to hurt or damage someone or something
+attempt,to try to do something
+attend,to be present at an event or place
+attendance,the act of being present
+attention,the act of focusing on something
+attitude,a way of thinking or feeling about something
+attract,to draw interest or attention
+attraction,something that draws interest or attention
+attractive,pleasing or appealing to look at
+attribute,a quality or characteristic of something
+audience,a group of people watching or listening
+aunt,the sister of your mother or father
+author,a person who writes books or articles
+automatically,done by a machine or without thinking
+autumn,the season between summer and winter
+available,able to be used or gotten
+average,typical or normal amount or level
+avoid,to stay away from something
+award,a prize given for achievement
+aware,knowing about something
+awareness,knowledge or understanding of something
+away,at a distance from a place
+awful,very bad or unpleasant
+baby,a very young child or infant
+back,the rear part of something
+background,the area behind the main subject
+bad,not good or poor quality
+badly,in a poor or harmful way
+bag,a container made of flexible material
+balance,an even distribution of weight or amount
+ball,a round object used in games
+ban,to officially forbid something
+band,a group of musicians or a ring
+bank,a place where money is kept or managed
+bar,a long rod or a place to get drinks
+barely,only just or almost not
+barrier,something that blocks movement or progress
+base,the bottom support or foundation
+basic,simple or fundamental
+basically,in the most important way
+basis,the main reason or foundation
+bath,a container for washing or washing oneself
+battle,a fight between groups or armies
+be,to exist or live
+beach,a sandy or pebbly shore by water
+bear,a large wild animal or to carry something
+beat,to hit repeatedly or win against someone
+beautiful,pleasing to look at or very attractive
+beauty,the quality of being pleasing or attractive
+because,for the reason that
+become,to begin to be something
+bed,a piece of furniture for sleeping
+bedroom,a room used for sleeping in
+beer,an alcoholic drink made from barley and hops
+before,earlier than a certain time or event
+begin,to start or do the first part of something
+"behave","to act in a certain way, usually good"
+behavior,the way a person or animal acts
+behind,at the back of or after something
+belief,an idea that someone thinks is true
+believe,to accept something as true or real
+bell,a hollow metal object that makes sound
+belong,to be owned by or part of something
+below,at a lower place or position than something
+belt,a strip of leather or cloth worn around waist
+bend,to shape something by curving it
+beneath,under or lower than something else
+benefit,an advantage or good result from something
+beside,next to or at the side of something
+besides,in addition to or apart from something
+bet,to risk money on a result happening
+between,in the space separating two things
+beyond,farther than or outside the limits of
+bias,a preference that affects fairness or judgment
+bid,to offer a price for something in an auction
+big,of large size or amount
+bike,a bicycle or motorcycle
+bill,a statement of money owed for goods or services
+bin,a container for storing or throwing away things
+bind,to tie or fasten something tightly
+biological,relating to living things or life science
+bird,a creature with feathers and wings that flies
+birth,the process of being born
+bit,a small piece or amount of something
+bite,to cut or hold with teeth
+"black","the darkest color, like night without light"
+blame,to say someone is responsible for a fault
+bless,to ask for help or protection from God
+blind,unable to see
+block,a solid piece of material or to stop movement
+blog,a website with regular personal or topical posts
+blood,the red liquid that flows in bodies
+bloody,covered in or full of blood
+blow,to move air or strike with force
+blue,a color like the sky on a clear day
+"board","a flat, thin, rectangular piece of material"
+boat,a small vessel for traveling on water
+body,the physical structure of a person or animal
+bomb,an explosive device that causes destruction
+bond,a strong connection or tie between people or things
+bone,the hard parts inside the body that form the skeleton
+book,a set of written or printed pages bound together
+"boom","a loud, deep, resonant sound or rapid growth"
+boost,to increase or improve something
+boot,a type of sturdy shoe covering the foot and ankle
+border,the edge or boundary of an area or country
+bore,to make someone feel tired or uninterested
+borrow,to take something temporarily with permission
+boss,a person in charge of workers or a group
+both,referring to two people or things together
+bother,to annoy or cause trouble for someone
+bottle,a container for holding liquids
+bottom,the lowest part or point of something
+boundary,a line that marks the edge of an area
+"bowl","a round, deep dish used for holding food or liquid"
+box,a container with flat sides and a lid
+boy,a male child or young man
+brain,the organ inside the head that controls thinking
+branch,a part of a tree that grows out from the
+brand,a type of product made by a particular company
+bread,a common food made from baked dough
+break,to separate into pieces or stop working
+breakfast,the first meal of the day
+breast,the front part of the chest of a person or
+breath,the air taken in or let out when breathing
+breathe,to take air into and out of the lungs
+breed,to produce young animals or plants
+bridge,a structure built to cross over water or land
+brief,short in time or length
+briefly,for a short time
+bright,giving off a lot of light or intelligent
+brilliant,very bright or extremely clever
+bring,to carry or take something to a place
+broad,wide or large in extent or range
+broadcast,to send out a program on radio or TV
+brother,a male sibling
+brown,a color like dark orange or red mixed with black
+brush,a tool with bristles for cleaning or painting
+budget,a plan for how to spend money
+build,to make or construct something
+bunch,a group of things held or growing together
+burden,a heavy load or responsibility
+burn,to produce fire or heat by burning
+burst,to break open suddenly
+bury,to put something underground
+bus,a large vehicle for carrying passengers
+business,an organization for selling goods or services
+busy,actively doing something or full of activity
+but,used to show contrast or exception
+button,a small fastener on clothes or devices
+buy,to get something by paying money
+buyer,a person who purchases something
+"by","near or next to, through the action of"
+cable,a thick rope or wire for carrying electricity or signals
+cake,a sweet baked dessert
+calculate,to find a number using math
+call,to speak or shout to someone
+calm,quiet and peaceful without noise or excitement
+camera,a device for taking photographs or videos
+camp,a place where people stay temporarily outdoors
+campaign,a series of planned actions to achieve a goal
+"can","able to, a metal container for food or drink"
+cancel,to stop or call off something planned
+cancer,a disease caused by uncontrolled cell growth
+candidate,a person seeking a job or position
+cap,a hat without a brim
+capability,the ability to do something
+capable,having the ability to do something
+capacity,the maximum amount something can hold
+"capital","a city where a government is based, money for investment"
+capture,to take control or catch someone or something
+car,a vehicle with four wheels for driving on roads
+carbon,a chemical element found in all living things
+card,a small flat piece for identification or payment
+care,the effort to look after someone or something
+career,a job or profession over a long time
+careful,showing attention to avoid mistakes or harm
+carefully,in a way that avoids mistakes or harm
+carpet,a floor covering made of thick fabric
+carry,to hold and move something from one place
+case,a container or an example of something happening
+cash,money in coins or bills
+cast,to throw something forcefully
+castle,a large strong building for defense
+cat,a small domesticated animal with fur and whiskers
+catalog,a list or collection of items for sale or display
+catch,to grab or stop something moving through the air
+category,a group of things with shared features
+cause,a reason something happens or a goal to support
+celebrate,to do something special for an important event
+celebration,a joyful event to mark a special occasion
+cell,a small room or the basic unit of life
+cent,a unit of money equal to one hundredth of a
+center,the middle point or place of something
+central,located in the middle or most important part
+century,a period of one hundred years
+ceremony,a formal event for a special occasion
+certain,sure or known without doubt
+"certainly","without any doubt, definitely"
+chain,a series of connected links or things
+chair,a seat for one person with a back
+chairman,a person leading a meeting or organization
+challenge,a difficult task or problem to solve
+chamber,a room used for a special purpose
+champion,a winner of a competition or contest
+championship,a contest to find the best competitor
+chance,the possibility that something will happen
+change,to make or become different
+"channel","a path for water, TV, or communication"
+chapter,a section of a book or story
+character,a person in a story or a letter/symbol
+characteristic,a typical quality or feature of something
+characterize,to describe the typical qualities of something
+charge,to ask for payment or to attack
+charity,help or money given to those in need
+charm,a small object believed to bring luck
+chart,a visual display of information or data
+chase,to run after someone or something
+"chat","to talk in a friendly, informal way"
+cheap,low in price or cost
+check,to examine or verify something
+cheek,the side of the face below the eye
+cheese,a food made from milk
+chemical,a substance used in or made by chemistry
+chest,the front part of the body between the neck and
+chicken,a common farm bird raised for meat or eggs
+chief,the leader or most important person
+child,a young human being
+childhood,the time when someone is a child
+chip,a small piece broken off something
+chocolate,a sweet food made from cocoa
+choice,an option or decision
+choose,to pick or select something
+church,a building used for Christian worship
+cigarette,a small roll of tobacco for smoking
+circle,a round shape with no corners
+circumstance,a fact or condition affecting a situation
+cite,to mention as evidence or example
+citizen,a legally recognized member of a country
+city,a large town or urban area
+civil,relating to citizens or polite behavior
+civilian,a person not in the military
+claim,to say something is true or yours
+class,a group of students or a category
+classic,something judged to be of highest quality
+classical,relating to ancient Greek or Roman culture or traditional music
+clause,a part of a sentence with a subject and verb
+clean,free from dirt or mess
+clear,easy to see or understand
+clearly,in a way that is easy to see or understand
+click,to press a button on a mouse or device
+climate,the usual weather in a place
+climb,to go up something using hands or feet
+clinical,relating to medical treatment or observation
+clock,device that shows the time
+close,to shut something or be near
+closely,in a careful or detailed way
+clothes,items worn to cover the body
+clothing,garments worn on the body
+cloud,visible mass of water vapor in sky
+club,group of people with shared interest
+cluster,a group of things close together
+coach,person who trains athletes or team
+coal,black rock used as fuel
+coast,land next to the sea
+coat,outer garment worn for warmth
+code,system of symbols or rules
+coffee,hot drink made from roasted beans
+coin,small flat metal money piece
+cold,having low temperature
+collapse,to fall down suddenly
+colleague,person you work with
+collect,to gather things together
+collection,group of items gathered together
+college,school for higher education
+color,property that shows hue of things
+column,vertical division or pillar
+combination,joining two or more things
+combine,to join or mix together
+come,to move toward a place
+comedy,funny play or movie
+comfort,state of physical ease
+comfortable,providing physical ease or relaxation
+command,to give an order
+comment,a spoken or written remark
+commercial,related to business or trade
+commission,group given a task or fee paid
+commit,to carry out or pledge
+commitment,promise to do something
+committee,group chosen to make decisions
+common,usual or shared by many
+communicate,to share information or ideas
+communication,the act of sharing information
+community,a group of people living or working together
+company,a business or group of people working together
+compare,to look at similarities and differences between things
+comparison,the act of examining two or more things side by
+compensation,money or payment for work or loss
+compete,to try to win against others
+competition,an event where people try to win
+competitive,wanting to win or be better than others
+competitor,a person or group trying to win against others
+complain,to say something is wrong or not good
+complaint,a statement about something wrong or bad
+complete,to finish or make whole
+completely,totally or fully
+"complex","made of many connected parts, not simple"
+complexity,the state of being complicated or difficult
+complicate,to make something more difficult or confusing
+component,a part of a larger whole
+compose,to make or create by putting parts together
+composition,the way something is made or put together
+compound,a thing made of two or more parts combined
+comprehensive,including all or nearly all parts or details
+comprise,to include or contain
+compromise,an agreement where both sides give up something
+compute,to calculate or figure out by using a machine
+computer,an electronic device for storing and processing data
+concentrate,to focus attention on something
+concentration,the act of focusing attention
+concept,an idea or general understanding
+concern,a worry or interest about something
+concert,a live music performance
+conclude,to finish or decide after thinking
+conclusion,the end or decision reached after thinking
+"concrete","real or specific, not abstract"
+condition,the state or situation of something
+"conduct","to lead or guide, behavior or way of acting"
+conference,a formal meeting for discussion
+confidence,belief in oneself or trust in something
+confident,feeling sure about oneself or something
+confirm,to prove or show something is true
+conflict,a serious disagreement or fight between people or groups
+confuse,to make someone unable to think clearly
+confusion,a state of being unclear or mixed up
+connect,to join or link two or more things
+connection,a link or relationship between things
+consequence,a result or effect of an action
+consequently,as a result or effect of something
+conservative,favoring traditional ideas and values
+consider,to think about carefully before deciding
+"considerable","large in size, amount, or degree"
+consideration,careful thought before making a decision
+consist,to be made up or formed of something
+consistent,always behaving or happening in the same way
+constant,happening all the time without change
+"constantly","all the time, continuously"
+constitute,to make up or form something
+constraint,a limit or restriction on actions
+construct,to build or put together something
+construction,the process of building something
+consult,to ask for advice or information
+consultant,a person who gives expert advice
+consume,to use up or eat something
+consumer,a person who buys or uses goods
+contact,to communicate or get in touch with someone
+contain,to have something inside or within
+contemporary,belonging to the same time period
+content,the things that are inside something
+contest,a competition or challenge
+context,the situation or information around something
+continue,to keep going without stopping
+continuous,happening without interruption
+contract,a written or spoken agreement
+contrast,to show differences when compared
+contribute,to give or add to something
+contribution,something given to help or support
+control,to have power over something
+controversial,causing disagreement or public debate
+convention,a usual way of doing something
+conventional,following accepted customs or standards
+conversation,a talk between two or more people
+convert,to change something into a different form
+convince,make someone believe or agree
+cook,prepare food by heating it
+cool,slightly cold or calm down
+cooperation,working together for a goal
+cope,deal successfully with problems
+copy,make a similar or duplicate version
+core,central or most important part
+corner,where two edges or sides meet
+corporate,relating to a large company
+corporation,a large business or company
+correct,free from mistakes or accurate
+correspond,match or communicate with someone
+cost,the price or amount paid
+cough,force air out of the throat suddenly
+could,used to express possibility or ability
+council,a group that makes decisions
+counsel,advice or guidance given
+count,determine the total number of
+counter,a flat surface or oppose something
+country,a nation or land area
+county,a regional division within a state
+couple,two people or things together
+course,a path or series of lessons
+court,a place for legal cases or sports
+cousin,child of your aunt or uncle
+cover,put something over or protect
+coverage,extent of reporting or protection
+cow,a large farm animal that gives milk
+crack,a narrow break or split
+craft,skill in making things by hand
+crash,a sudden collision or failure
+crazy,mentally unstable or very strange
+cream,thick white liquid from milk
+create,make something new or original
+creation,something that has been made
+creative,having the ability to make new ideas
+creature,a living being or animal
+credit,recognition for work or money lent
+crew,a group working together on a task
+crime,an illegal act or wrongdoing
+criminal,a person who breaks the law
+crisis,a time of great difficulty or danger
+criteria,standards used to judge or decide something
+critic,a person who evaluates or judges something
+critical,expressing disapproval or very important
+criticism,the act of expressing disapproval or judgment
+criticize,to express disapproval or find faults
+crop,a plant grown for food or profit
+cross,to go from one side to another
+crowd,a large group of people gathered together
+crucial,extremely important or necessary
+cry,to produce tears from the eyes
+cultural,relating to the ideas and customs of a group
+"culture","the beliefs, customs, and arts of a group"
+cup,a small container for drinking liquids
+curious,eager to learn or know something
+currency,money used in a country
+current,happening or existing now
+currently,at the present time
+curtain,a piece of cloth hung to cover a window
+"curve","a smooth, rounded line or shape"
+custom,a usual way of behaving or doing something
+customer,a person who buys goods or services
+cut,to divide or make an opening with a sharp tool
+cycle,a series of events that repeat regularly
+dad,a father
+daily,happening every day
+damage,harm or injury that reduces value or function
+damn,used to express anger or emphasis
+dance,to move the body rhythmically to music
+danger,the possibility of harm or injury
+dangerous,likely to cause harm or injury
+dare,to have the courage to do something
+dark,having little or no light
+darkness,the state of being without light
+data,facts or information collected for analysis
+database,an organized collection of data
+date,a specific day of the month or year
+daughter,a female child of parents
+day,a 24-hour period of time
+dead,no longer alive or functioning
+deal,an agreement or arrangement
+dealer,a person who sells goods or services
+dear,loved or valued very much
+death,the end of life
+debate,a formal discussion on a topic
+debt,money owed to someone else
+decade,a period of ten years
+decide,to make a choice or judgment
+decision,a choice made after thinking
+declare,to announce something officially
+decline,to become smaller or refuse
+decrease,to become less or reduce
+dedicate,to set aside for a special purpose
+deep,extending far down or inward
+deeply,in a strong or intense way
+defeat,to win against someone in a contest
+defend,to protect from harm or attack
+defense,protection against attack or harm
+deficit,the amount by which something is less
+define,to explain the meaning of something
+definitely,without any doubt or question
+definition,a statement of the meaning of a word
+degree,a unit of measurement or level
+delay,to make something happen later than planned
+delight,great pleasure or happiness
+deliver,to bring and hand over something
+delivery,the act of bringing goods to a place
+demand,a strong request or need for something
+democracy,government by the people or their elected representatives
+democratic,related to democracy or equal rights
+demonstrate,to show or prove something clearly
+demonstration,a public display of opinion or skill
+density,how much mass is in a given space
+deny,to say something is not true or refuse
+department,a part of a larger organization
+depend,to rely on someone or something
+dependent,needing support or help from others
+deposit,to put money or something valuable somewhere
+depress,to make someone feel sad or lower in mood
+depression,a feeling of deep sadness or low mood
+depth,the distance from top to bottom or front to back
+derive,to get or receive from a source
+describe,to say or write what something is like
+description,a statement that explains what something looks like
+"desert","a dry, sandy area with little rain"
+deserve,to have earned something because of actions
+design,a plan or drawing for making something
+designer,a person who plans how something looks
+desire,a strong feeling of wanting something
+desk,a piece of furniture for writing or working
+despite,without being affected by something else
+destroy,to damage something so it no longer exists
+destruction,the act of causing damage or ruin
+detail,a small part or fact about something
+detect,to discover or notice something hidden
+determination,the quality of trying hard to do something
+determine,to decide or figure out something
+develop,to grow or cause to grow or improve
+development,the process of growing or improving
+device,a tool or machine made for a purpose
+devote,to give time or effort to something
+dialog,a conversation between two or more people
+die,to stop living
+diet,the food and drink a person usually eats
+differ,to be unlike or not the same
+difference,the way two things are not the same
+different,not the same as another thing
+differently,in a way that is not the same
+difficult,not easy to do or understand
+difficulty,a problem or something hard to do
+dig,to break or move earth with hands or tools
+digital,using numbers or electronic signals
+dimension,a measurable extent like length or width
+"dinner","the main meal of the day, usually evening"
+direct,to guide or control something
+direction,the path or way to a place
+directly,in a straight line or without stopping
+director,a person who manages or leads a group
+dirty,not clean or covered with dirt
+disagree,to have a different opinion than someone else
+disappear,to stop being visible or present
+disappoint,to make someone feel sad or let down
+disaster,a sudden event causing great damage or harm
+discipline,training to follow rules or behave properly
+discount,a reduction in price
+discover,to find something for the first time
+discovery,the act of finding something new
+discuss,to talk about something with others
+discussion,a conversation about a particular topic
+disease,an illness affecting the body or mind
+dish,a shallow container for food or a prepared meal
+"disk","a flat, round object or storage medium"
+dismiss,to send away or reject an idea or person
+disorder,a state of confusion or illness
+display,to show or exhibit something
+dispute,a disagreement or argument
+distance,the amount of space between two points
+distant,far away in space or time
+distinct,clearly different or separate
+distinction,a difference or special recognition
+distinguish,to recognize differences between things
+distribute,to give out or spread over an area
+district,an area or region within a city or country
+disturb,to interrupt or bother someone
+diversity,variety or differences within a group
+divide,to separate into parts or groups
+division,the act of separating or a group formed by separating
+divorce,the legal ending of a marriage
+do,to perform an action or task
+doctor,a person trained to treat illnesses
+document,a written or printed record
+"dog","a common domesticated animal, often a pet"
+dollar,a unit of money used in some countries
+domestic,relating to the home or within a country
+dominate,to have control or power over something
+door,a movable barrier for entering or exiting
+double,twice as much or two times
+doubt,a feeling of uncertainty or lack of trust
+down,toward a lower place or position
+dozen,a group of twelve items
+draft,a preliminary version of a piece of writing
+drag,to pull something along the ground
+drama,a play or serious story for acting
+dramatic,relating to drama or sudden strong emotions
+dramatically,in a sudden or noticeable way
+draw,to make a picture with a pen or pencil
+dream,a series of thoughts during sleep
+dress,clothing worn by a person
+drink,to swallow a liquid
+drive,to operate a vehicle
+driver,a person who controls a vehicle
+drop,to let something fall
+drug,a substance used as medicine or for effect
+dry,not wet or moist
+due,expected to happen or arrive
+during,throughout the time of something
+"dust","fine, dry particles of earth or dirt"
+duty,a moral or legal responsibility
+each,every one of two or more things
+ear,the organ used for hearing
+early,happening before the usual time
+earn,to receive money for work done
+earth,the planet we live on
+ease,to make something less difficult or painful
+easily,without difficulty
+east,the direction where the sun rises
+eastern,located in the east part of an area
+easy,not difficult to do
+eat,to put food into the mouth and swallow
+economic,relating to money or business
+economy,the system of money and trade in a country
+edge,the border or outer part of something
+edit,to prepare written material for publication
+edition,a particular version of a book or newspaper
+editor,a person who prepares content for publication
+educate,to teach or provide knowledge
+education,the process of learning or teaching
+educational,intended to teach or provide knowledge
+effect,a result or change caused by something
+effective,producing the intended result or effect
+effectively,in a way that produces the desired result
+efficiency,doing something well without wasting time or resources
+efficient,working well without wasting time or resources
+effort,physical or mental energy used to do something
+"egg","an oval object laid by birds, often eaten as food"
+either,one or the other of two choices
+elderly,old or advanced in age
+elect,to choose someone for a position by voting
+election,a process of choosing leaders by voting
+electric,powered by electricity
+electricity,a form of energy that powers devices
+electronic,using or related to devices with circuits
+element,a basic part or component of something
+eliminate,to remove or get rid of something completely
+"else","in addition, different or other"
+elsewhere,in or to another place
+email,a message sent electronically over the internet
+embarrass,to make someone feel awkward or ashamed
+embrace,to hold someone closely in your arms
+emerge,to come out or appear from somewhere
+emergency,a sudden serious situation needing quick action
+emotion,a strong feeling like happiness or anger
+emotional,relating to feelings or showing strong feelings
+emphasis,special importance or attention given to something
+emphasize,to give special importance to something
+empire,a group of countries ruled by one leader
+employ,to hire someone to work for pay
+employee,a person who works for an employer
+employer,a person or company that hires workers
+employment,the state of having a paid job
+"empty","containing nothing, not filled"
+enable,to make something possible or easier
+encounter,to meet or come across unexpectedly
+encourage,to give support or confidence to someone
+end,the final part or conclusion of something
+enemy,a person or group that is against you
+energy,the ability to do work or cause change
+engage,to participate or become involved in something
+engine,a machine that converts energy into motion
+engineer,a person who designs or builds machines or structures
+enhance,to improve or make better
+enjoy,to take pleasure in something
+enormous,very large in size or amount
+enough,as much as needed
+ensure,to make certain that something happens
+enter,to go into a place
+enterprise,a business or company
+entertain,to provide amusement or enjoyment
+entertainment,activities that provide fun or enjoyment
+entire,whole or complete
+entirely,completely or fully
+entitle,to give a right or claim to something
+entrance,a way in or entry point
+entry,the act of going in or a place to enter
+envelope,a paper cover for a letter
+environment,the surroundings or conditions around something
+environmental,related to the natural world
+episode,a single event or part of a series
+equal,the same in amount or value
+equally,in the same way or amount
+equation,a math statement showing two equal expressions
+equipment,tools or machines needed for a task
+equivalent,equal in value or meaning
+era,a period of time marked by events
+error,a mistake or wrong action
+escape,to get away from danger or confinement
+especially,more than usual or particularly
+essay,a short piece of writing on a topic
+essential,absolutely necessary or very important
+establish,to set up or start something
+establishment,a business or organization
+estate,all property owned by a person
+estimate,a rough calculation or guess
+ethnic,relating to a cultural or racial group
+evaluate,to judge or assess something
+evaluation,the process of judging or assessing
+"even","flat or equal, also used to show surprise"
+evening,the time between late afternoon and night
+"event","something that happens, especially important"
+eventually,in the end after some time
+ever,at any time
+every,each one without exception
+everybody,all people
+everyday,common or usual daily
+everyone,all people
+everything,all things
+everywhere,in all places
+evidence,proof or facts showing truth
+evil,very bad or morally wrong
+evolution,gradual change over time
+evolve,to develop or change gradually
+exact,completely correct or precise
+exactly,in a precise or correct way
+exam,a test of knowledge or skill
+examination,a detailed inspection or test
+examine,to look at carefully
+example,a sample or model to show
+exceed,to go beyond a limit
+excellent,very good or outstanding
+except,not including
+exception,something that does not follow a rule
+excess,more than needed or allowed
+exchange,to give and receive something
+excite,to cause strong feelings of happiness
+excitement,a feeling of great enthusiasm
+exclude,to keep out or leave out
+excuse,a reason to explain or forgive
+executive,a person who manages or leads
+exercise,physical activity for health
+exhaust,to use up completely
+exhibit,to show or display something
+exhibition,a public display of items
+exist,to be real or alive
+existence,the state of being alive or real
+expand,to increase in size or amount
+expansion,the act of growing larger
+expect,to think something will happen
+expectation,a belief that something will happen
+expenditure,the act of spending money
+expense,the cost of something you buy or pay for
+expensive,costing a lot of money
+experience,knowledge or skill gained over time
+experiment,a test to learn or discover something
+experimental,relating to trying new methods or ideas
+expert,a person with a lot of skill or knowledge
+explain,to make something clear or easy to understand
+explanation,a reason or cause given for something
+explore,to travel around to learn about a place
+export,to send goods to another country to sell
+expose,to show or reveal something hidden
+exposure,the state of being uncovered or shown
+express,to show or communicate a thought or feeling
+expression,a look or phrase that shows a feeling or idea
+extend,to make something longer or bigger
+extension,an addition that makes something longer or bigger
+extensive,covering a large area or amount
+extent,the size or range of something
+external,on or from the outside
+extra,more than what is usual or needed
+extract,to take something out from a larger whole
+extraordinary,very unusual or remarkable
+extreme,very great in degree or intensity
+extremely,to a very high degree
+eye,the organ you use to see
+face,the front part of the head
+facility,a place or building for a specific purpose
+fact,something that is true or real
+factor,a part or element that causes a result
+factory,a building where goods are made
+fade,to lose color or brightness gradually
+fail,to not succeed in doing something
+failure,lack of success in achieving a goal
+fair,treating people equally and justly
+fairly,to some extent but not completely
+faith,strong belief or trust in something
+faithfully,in a loyal and accurate way
+fall,to drop down from a higher place
+false,not true or correct
+familiar,well known or easily recognized
+family,a group of related people living together
+famous,known by many people
+fan,someone who likes something a lot
+fancy,elaborate or decorative
+fantastic,very good or impressive
+far,a long distance away
+farm,land used to grow crops or animals
+farmer,a person who works on a farm
+fascinate,to attract and hold attention
+fashion,a popular style of clothing or behavior
+fast,moving quickly
+fat,having a lot of body weight
+father,a male parent
+fault,a mistake or problem
+favor,an act of kindness
+favorite,liked the most
+fear,a feeling of being afraid
+feature,a part or characteristic
+federal,relating to the national government
+fee,a payment for service
+feed,to give food to someone or something
+feel,to sense with the body or mind
+fellow,a man or boy
+female,a woman or girl
+fence,a barrier around an area
+festival,a special event or celebration
+few,a small number
+fiction,a made-up story
+field,an open area of land
+fight,to try to hurt or win against someone
+figure,a number or shape
+file,a collection of documents or data
+fill,to make full
+film,a movie or thin layer
+filter,a device to remove unwanted parts
+final,last or ending
+finally,after a long time or at last
+finance,the management of money
+financial,relating to money
+find,to discover or locate something
+fine,good or acceptable quality or condition
+finger,one of the five digits on a hand
+finish,to complete or end something
+"fire","hot, burning gas and flames"
+firm,a business or company
+firmly,in a strong or steady way
+first,coming before all others in time or order
+firstly,used to introduce the first point or reason
+fish,a water animal with gills and fins
+fit,to be the right size or shape
+fix,to repair or make something work
+flag,a piece of cloth with a symbol or colors
+flash,to shine brightly for a short time
+"flat","having a smooth, even surface without bumps"
+flexible,able to bend without breaking
+flight,the act of flying or a trip by airplane
+float,to rest or move on the surface of a liquid
+flood,an overflow of water covering land
+floor,the bottom surface of a room
+flow,to move steadily and continuously
+flower,the colorful part of a plant that blooms
+fly,to move through the air using wings
+focus,to concentrate attention on something
+fold,to bend something over itself
+folk,people in general or a particular group
+follow,to come after or go behind someone
+food,something eaten to provide nutrition
+fool,a person who acts without good sense
+foot,the lower part of the leg used for standing
+football,a game played by kicking a ball
+for,used to indicate purpose or benefit
+force,strength or power applied to something
+forecast,a prediction of future weather or events
+foreign,from another country or place
+forest,a large area covered with many trees
+"forever","for all time, without end"
+forget,to fail to remember something
+form,the shape or structure of something
+formal,following rules or customs strictly
+format,the arrangement or layout of something
+formation,the act of forming or creating something
+former,having been previously but not now
+formula,a fixed way of doing or making something
+forth,outward or forward in place or time
+fortunate,having good luck or favorable circumstances
+fortune,a large amount of money or luck
+forward,toward the front or future time
+found,to establish or start something
+foundation,the base or support of a structure or idea
+fragment,a small piece broken off from something
+frame,a structure that surrounds or supports something
+framework,a basic structure for supporting or organizing
+"free","not under control or payment, available to use"
+freedom,the power to act or think without restriction
+freeze,to become hard or solid because of cold
+frequency,how often something happens over time
+frequent,happening often or many times
+frequently,occurring many times or often
+"fresh","new, recently made or obtained"
+friend,a person you like and trust
+friendly,acting in a kind and helpful way
+friendship,a close and trusting relationship between people
+frighten,to make someone feel afraid
+from,indicating the starting point or source
+front,the forward part or surface of something
+fruit,the sweet part of a plant that contains seeds
+fuel,a material burned to produce energy
+fulfill,to complete or achieve something desired
+full,containing as much as possible
+fully,completely or entirely
+fun,enjoyment or amusement
+function,the purpose or job of something
+functional,working properly or useful
+fund,a sum of money saved or provided for a purpose
+"fundamental","basic and important, forming a foundation"
+funny,causing laughter or amusement
+furniture,movable objects like chairs and tables in a room
+further,more distant or additional
+"furthermore","in addition, also"
+future,the time that comes after the present
+gain,to get or increase something
+gallery,a room or building for showing art
+game,an activity played for fun or sport
+gap,an empty space or opening
+garden,a piece of land for growing plants
+gas,a substance like air that you cannot see
+gate,a movable barrier at an entrance
+gather,to bring things or people together
+gay,happy or relating to being attracted to the same sex
+gaze,to look steadily at something
+gear,equipment or tools for a purpose
+gender,whether someone is male or female
+gene,a part of DNA that controls traits
+general,common or not specific
+generally,usually or in most cases
+generate,to produce or create something
+generation,all people born around the same time
+genetic,relating to genes or heredity
+gentle,kind and soft in action
+gentleman,a polite and well-mannered man
+gently,in a soft or careful way
+genuine,real or honest
+gesture,a movement to express an idea or feeling
+get,to receive or obtain something
+giant,very large or huge
+gift,something given to someone without payment
+girl,a female child or young woman
+give,to offer or hand something to someone
+glad,happy or pleased
+glance,a quick or brief look
+"glass","a hard, clear material used for windows"
+global,relating to the whole world
+go,to move from one place to another
+goal,something you want to achieve
+god,a supreme being or deity
+gold,a valuable yellow metal
+golden,made of or like gold
+golf,a sport where players hit a ball into holes
+good,having positive qualities or being right
+govern,to control or lead a group or country
+government,the group that runs a country or area
+governor,a person who leads a state or region
+grab,to quickly take or hold something
+grade,a level or score in school or quality
+gradually,happening slowly over time
+graduate,to finish a course of study
+grain,small hard seeds from plants like wheat
+grammar,rules for using words in a language
+"grand","large, impressive, or important"
+grandmother,the mother of your parent
+grant,to give or allow something officially
+grass,green plants that cover the ground
+grateful,feeling thankful or appreciative
+gray,a color between black and white
+great,very good or large in size
+greatly,to a large extent or degree
+green,the color of grass or leaves
+greet,to say hello to someone
+grin,a big smile showing teeth
+ground,the surface of the earth
+group,a number of people or things together
+grow,to become bigger or develop
+growth,the process of increasing in size
+guarantee,a promise that something will happen
+guard,to protect or watch over something
+guess,to give an answer without sure knowledge
+guest,a person invited to a place or event
+guide,a person who shows the way
+guideline,a rule or advice to follow
+guilty,feeling responsible for a wrong act
+guitar,a stringed musical instrument
+gun,a weapon that shoots bullets
+guy,an informal word for a man
+habit,a regular way of doing something
+hair,the thin strands growing on your head
+half,one of two equal parts
+hall,a large room or corridor
+hand,the part at the end of your arm
+handle,to hold or control something
+hang,to suspend or attach from above
+happen,to take place or occur
+happiness,the state of feeling joy or pleasure
+happy,feeling or showing pleasure or contentment
+harbor,a place where ships can safely dock
+hard,difficult to do or understand
+"hardly","almost not, barely"
+harm,to cause injury or damage
+hat,a covering for the head
+hate,to feel strong dislike for something
+have,to own or possess something
+he,a male person or animal
+head,the top part of the body with the brain
+health,the condition of being well or free from illness
+healthy,in good physical or mental condition
+hear,to perceive sound with the ears
+heart,the organ that pumps blood in the body
+heat,the quality of being hot or warm
+heavily,in a strong or intense way
+heavy,having great weight
+height,the measurement from base to top
+hell,a place of punishment after death
+hello,a greeting used when meeting someone
+help,to assist or aid someone
+helpful,giving or ready to give help
+"hence","for this reason, therefore"
+here,in this place
+hero,a person admired for courage or deeds
+herself,referring to a female person previously mentioned
+hesitate,to pause before doing something
+hi,a casual greeting
+hide,to put out of sight
+high,far above the ground or another point
+highlight,to emphasize or make something stand out
+highly,to a great degree or level
+hill,a naturally raised area of land
+himself,referring to a male person previously mentioned
+hint,a small or indirect suggestion
+hire,to employ someone for work
+historian,a person who studies or writes about history
+historic,important in history or likely to be remembered
+historical,related to past events or history
+history,the study or record of past events
+hit,to strike or touch something forcefully
+hold,to grasp or carry something with hands
+holder,a person or thing that holds something
+hole,an empty space or opening in a surface
+holiday,a day for rest or celebration
+home,a place where someone lives
+honest,telling the truth and being fair
+honor,high respect or recognition
+hook,a curved piece used for catching or holding
+hope,to want something to happen
+hopefully,in a way that shows hope
+horrible,very bad or unpleasant
+horse,a large animal used for riding or work
+hospital,a place where sick people get care
+host,a person who receives guests
+hot,having a high temperature
+hotel,a place where people pay to stay overnight
+hour,a period of sixty minutes
+house,a building for people to live in
+household,all the people living in one home
+how,in what way or manner
+"however","but, in spite of that"
+huge,very large in size or amount
+"human","a person, relating to people"
+humor,the quality of being funny or amusing
+hunger,the feeling of needing food
+hunt,to search for and catch animals or things
+hurry,to move or act quickly
+hurt,to cause pain or injury
+husband,a married man
+hypothesis,an idea to be tested or proved
+I,the person speaking or writing
+ice,frozen water
+idea,a thought or plan
+ideal,perfect or most suitable
+identify,to recognize or name someone or something
+identity,who someone is
+if,used to introduce a condition or possibility
+ignore,to pay no attention to something or someone
+ill,not feeling well or sick
+illegal,not allowed by law
+illness,a state of being sick or unwell
+illustrate,to explain or decorate with pictures
+illustration,a picture or drawing explaining something
+image,a picture or visual representation
+imagination,the ability to form new ideas or pictures in mind
+imagine,to form a picture or idea in your mind
+immediate,happening right away or without delay
+"immediately","right away, without any waiting"
+immigrant,a person who moves to a new country to live
+immigration,the act of moving to a new country to live
+implement,to put a plan or idea into action
+implementation,the process of putting a plan into action
+implication,a possible effect or result of something
+imply,to suggest something without saying it directly
+import,to bring goods into a country from abroad
+importance,the state of being valuable or significant
+important,having great value or meaning
+impose,to force something to be accepted or done
+impossible,not able to be done or achieved
+impress,to make someone admire or respect you
+impression,an idea or feeling about something or someone
+impressive,causing admiration or respect
+improve,to make something better
+improvement,a change that makes something better
+in,inside or within something
+incentive,something that encourages a person to do something
+inch,a small unit of length equal to 2.54 centimeters
+"incident","an event or occurrence, often unusual or unpleasant"
+include,to have something as part of a whole
+income,money received regularly for work or investments
+incorporate,to include or combine into a whole
+increase,to become larger or greater
+increasingly,more and more over time
+indeed,used to emphasize a statement or truth
+independence,freedom from control or influence by others
+independent,not controlled or influenced by others
+index,an alphabetical list of topics or names with page numbers
+indicate,to show or point out something
+indication,a sign or piece of evidence
+individual,a single person or thing
+industrial,related to factories or manufacturing
+industry,business activity or a type of business
+infant,a very young baby or child
+infection,the spread of germs causing illness
+inflation,rise in prices over time
+influence,the power to affect someone or something
+inform,to give someone information
+information,facts or knowledge about something
+initial,first or beginning
+initially,at the beginning or first
+initiative,a new plan or action to solve a problem
+injure,to hurt or cause harm to someone
+injury,harm or damage to the body
+inner,located inside or within something
+innocent,not guilty or harmless
+innovation,a new idea or invention
+input,information or resources put into a system
+inquiry,a question or investigation
+inside,within the inner part of something
+insight,a clear understanding of a situation
+insist,to demand firmly or persistently
+inspire,to motivate or encourage someone
+install,to set up or put in place
+instance,an example or case of something
+instead,as an alternative or replacement
+institution,an organization or establishment
+institutional,relating to an organization or system
+instruction,a direction or order on how to do something
+instrument,a tool or device for a task
+insurance,protection against financial loss
+insure,to provide insurance coverage
+integrate,to combine or bring together
+intellectual,relating to thinking and understanding
+intelligence,the ability to learn and understand
+intend,to plan or mean to do something
+intense,very strong or extreme
+intention,a plan or purpose to do something
+interaction,communication or direct involvement between people or things
+interest,a feeling of wanting to learn or know about something
+interior,the inside part of something
+internal,inside or within something
+international,involving more than one country
+interpret,to explain the meaning of something
+interpretation,the act of explaining the meaning of something
+intervention,the act of becoming involved to change a situation
+interview,a formal meeting to ask questions or get information
+into,expressing movement or direction toward the inside
+introduce,to make someone known to another person
+introduction,the act of making someone known or starting something
+invent,to create something new that did not exist before
+invest,to put money or effort into something for future benefit
+investigate,to carefully examine or study something to find out facts
+investigation,the process of trying to find out the truth about
+investment,the act of putting money into something to earn profit
+investor,a person who puts money into something to earn profit
+invitation,a request to attend or participate in an event
+invite,to ask someone to come or join an event
+involve,to include or affect someone or something
+involvement,the act of taking part in something
+iron,a strong metal used for making tools and objects
+island,a piece of land surrounded by water
+isolate,to separate from others or keep apart
+issue,an important topic or problem for discussion
+it,used to refer to a thing previously mentioned
+item,a single thing or object
+itself,referring back to a thing previously mentioned
+jacket,a piece of clothing worn on the upper body
+jail,a place for keeping people as punishment or while waiting
+job,work done to earn money
+join,to connect or become part of something
+joint,shared by two or more people or parts
+joke,something said or done to cause laughter
+journal,a daily record of personal experiences or events
+journalist,a person who writes news stories for newspapers or media
+journey,a trip from one place to another
+joy,a feeling of great happiness
+judge,a person who decides the outcome in a court case
+judgment,the ability to make decisions or form opinions
+jump,to push yourself off the ground using your legs
+jury,a group of people who decide a court case
+just,fair or morally right
+justice,fair treatment according to the law
+justify,to show or prove something is right
+keen,very interested or eager
+keep,to have or hold something
+key,a small tool to open locks or important
+kick,to hit something with your foot
+kid,a child or young person
+kill,to cause someone or something to die
+kind,nice or caring toward others
+king,a male ruler of a country
+kiss,to touch with lips to show love
+kitchen,a room where food is cooked
+knee,the joint between thigh and lower leg
+knife,a tool with a sharp blade for cutting
+knock,to hit a surface to get attention
+know,to have information or be aware of
+knowledge,information and understanding about something
+label,a piece of paper or tag with information
+"labor","work, especially physical work"
+laboratory,a room for scientific experiments
+lack,to not have enough of something
+lady,a polite word for a woman
+lake,a large body of water surrounded by land
+land,the solid part of the earths surface
+landscape,the visible features of an area of land
+language,a system of words used for communication
+large,big in size or amount
+largely,mostly or mainly
+last,to continue for a certain time
+late,after the expected or usual time
+latter,the second of two things mentioned
+laugh,to make sounds showing happiness or fun
+laughter,the sound made when laughing
+launch,to start or send something into motion
+law,a rule made by a government
+lawyer,a person who practices or studies law
+lay,put something down carefully or in a flat position
+layer,a single thickness or level of material
+lazy,unwilling to work or use effort
+lead,to guide or be in charge
+leader,a person who leads or directs others
+leadership,the act of guiding or directing a group
+league,a group of sports teams or countries united
+lean,to rest against or incline in a direction
+leap,to jump a long distance or height
+learn,to gain knowledge or skill by study or experience
+"least","smallest in amount, degree, or importance"
+leather,material made from animal skin
+leave,to go away from a place
+lecture,a talk given to teach or inform
+"left","opposite of right, remaining or departed"
+leg,a limb used for standing or walking
+legal,allowed or required by law
+legislation,laws made by a government
+lend,to give something temporarily
+length,the measurement of something from end to end
+less,a smaller amount or degree
+lesson,a period of learning or teaching
+let,to allow or permit
+letter,a written or printed message sent to someone
+level,a position or height relative to a standard
+liability,legal responsibility for something
+liberal,open to new ideas or willing to change
+library,a place where books are kept for reading or borrowing
+license,official permission to do something
+lie,to rest in a flat position or tell an untruth
+life,the state of being alive
+lift,to raise something upward
+light,something that makes things visible or not heavy
+like,to enjoy or find pleasing
+likely,probably going to happen
+limit,a point or level beyond which something cannot go
+limitation,a restriction or boundary
+"line","a long, narrow mark or band"
+link,to connect or join together
+lip,the edge of the mouth
+liquid,a substance that flows and has no fixed shape
+list,a series of items written or spoken one after another
+listen,to pay attention to sounds or someone speaking
+listener,a person who hears or pays attention to sounds
+literally,in the exact or most basic meaning of words
+"literary","relating to books, writing, or literature"
+"literature","written works like books, poems, and stories"
+"little","small in size, amount, or degree"
+live,to be alive or happen in real time
+load,to put a heavy thing onto something else
+loan,money or item given temporarily to be returned
+local,relating to a nearby area or community
+locate,to find the exact place of something
+location,a particular place or position
+lock,a device to fasten something securely
+log,a record of events or a piece of wood
+"logic","reasoning done in a clear, sensible way"
+long,measuring a great distance or time
+look,to direct your eyes toward something
+loose,not tight or firmly fixed in place
+lose,to fail to keep or find something
+loss,the state of no longer having something
+lot,a large amount or number of something
+loud,making a strong or high volume sound
+love,a strong feeling of deep affection
+lovely,very beautiful or pleasant
+lover,a person who loves another romantically
+"low","not high in position, amount, or level"
+"luck","success or failure by chance, not effort"
+lucky,having good fortune or chance
+lunch,a meal eaten in the middle of the day
+luxury,something expensive and enjoyable but not necessary
+machine,a device that uses power to do work
+mad,very angry or mentally unwell
+magazine,a printed publication with articles and pictures
+magic,the use of special powers to make things happen
+mail,letters and packages sent by post
+main,most important or largest in size or amount
+mainly,mostly or primarily
+maintain,to keep something in good condition or continue
+maintenance,the act of keeping something in good condition
+major,very important or large in size or number
+majority,the greater part or more than half
+make,to create or produce something
+maker,a person or thing that makes something
+"male","a man or boy, the sex that can father children"
+man,an adult male human being
+manage,to control or be in charge of something
+management,the process of organizing and controlling something
+manager,a person who is in charge of a group or
+manner,a way of doing something or behaving
+manufacture,to make goods in large amounts using machines
+manufacturer,a company or person that makes products
+many,a large number of things or people
+map,a drawing showing places or routes
+"march","to walk with regular steps, often in a group"
+margin,the edge or border of something
+mark,a visible sign or spot on a surface
+market,a place where people buy and sell goods
+marriage,the legal or formal union of two people
+marry,to become legally joined as husband and wife
+"mass","a large amount of something, a body of matter"
+"massive","very large, heavy, or solid"
+master,a person with great skill or control
+match,a contest or game between opponents
+"mate","a partner or companion, especially in animals"
+material,the substance from which something is made
+"mathematics","the study of numbers, shapes, and patterns"
+"matter","a physical substance, something important"
+mature,fully grown or developed
+maximum,the greatest amount or highest limit
+may,used to express possibility or permission
+"maybe","perhaps, possibly but not certainly"
+mayor,the elected head of a city or town
+meal,an occasion when food is eaten
+mean,to intend or signify something
+"meanwhile","at the same time, during that time"
+"measure","to find the size, amount, or degree of something"
+"measurement","the size, length, or amount of something"
+meat,the flesh of animals used as food
+mechanism,a system of parts working together
+medical,relating to doctors or medicine
+medicine,a substance used to treat illness
+medium,a way or channel for communication
+meet,to come together with someone
+member,a person belonging to a group
+membership,the state of being a member
+memory,the ability to remember things
+mental,relating to the mind or thinking
+mention,to briefly talk about something
+menu,a list of food or options
+"mere","only, nothing more than"
+"merely","simply, just, only"
+mess,a dirty or untidy state
+message,information sent from one to another
+"metal","a hard, shiny material like iron"
+meter,a device that measures something
+method,a way of doing something
+middle,the center point or position
+might,possibility or strength to do something
+"mile","a unit of distance equal to 5,280 feet"
+military,relating to the armed forces
+milk,a white liquid produced by mammals
+mind,the part of a person that thinks
+"mine","belonging to me, a place to get minerals"
+minimum,the smallest amount allowed or needed
+minister,a government official or religious leader
+"minor","someone under legal adult age, small or less important"
+minority,a smaller part of a group
+minute,a unit of time equal to 60 seconds
+mirror,a surface that reflects images
+"miss","to fail to hit or meet, to feel absence"
+mission,an important task or purpose
+mistake,an error or wrong action
+mix,to combine two or more things
+mixture,a combination of different things
+mobile,able to move or be moved easily
+mode,a way or style of doing something
+model,a small copy or example to follow
+"moderate","average in amount or degree, not extreme"
+modern,relating to the present or recent times
+modify,to change something slightly
+module,a separate part of a system or machine
+mom,informal word for mother
+moment,a very short period of time
+money,coins or bills used to buy things
+monitor,a screen that shows information
+month,one of twelve parts of a year
+monthly,happening every month
+mood,a temporary feeling or state of mind
+moon,the natural satellite that orbits Earth
+moral,relating to right and wrong behavior
+more,a greater amount or number
+moreover,in addition to what was said
+morning,the early part of the day
+mortgage,a loan to buy a house
+most,the greatest amount or number
+mostly,mainly or generally
+mother,a female parent
+motion,the act of moving
+motivate,to give someone a reason to act
+motivation,the reason for doing something
+motor,a machine that produces movement
+mount,to fix or place something on something else
+mountain,a very tall natural hill
+mouse,a small rodent or computer device
+mouth,the opening in the face for eating and speaking
+move,to change position or place
+movement,the act of moving
+movie,a film or motion picture
+much,a large amount or degree
+multiple,having or involving many parts
+murder,the crime of killing someone intentionally
+muscle,tissue in the body that produces movement
+museum,a place where objects are displayed
+music,organized sounds that are pleasant to hear
+musical,relating to music or having music
+musician,a person who plays or creates music
+must,something necessary or required
+mutual,shared by two or more people or groups
+myself,the person speaking or writing
+mystery,something that is difficult to understand
+name,a word used to identify a person or thing
+narrative,a story or account of events
+"narrow","not wide, limited in width"
+nation,a large group of people living in one country
+national,relating to a whole country
+native,born in a particular place
+"natural","existing in nature, not made by humans"
+naturally,in a normal or usual way
+nature,the physical world and living things
+near,close to something in distance or time
+nearby,close to a place or person
+"nearly","almost, very close to"
+necessarily,in a way that cannot be avoided
+necessary,needed or required
+neck,the part of the body connecting head and shoulders
+need,to require something because it is important
+negative,expressing no or a bad quality
+neglect,to fail to care for properly
+negotiate,to discuss to reach an agreement
+negotiation,a discussion to reach an agreement
+neighbor,a person living near you
+neighborhood,an area where people live near each other
+neither,not one nor the other of two things
+nerve,a part of the body that sends signals
+nervous,feeling worried or anxious
+net,a material made of threads with holes
+network,a group of connected people or things
+never,not at any time
+"nevertheless","in spite of that, however"
+"new","not existing before, recently made"
+"newly","recently, just now"
+news,information about recent events
+newspaper,a printed paper with news and articles
+next,coming immediately after
+nice,pleasant or kind
+night,the time when it is dark outside
+no,used to say not any or not at all
+"nobody","no person, no one"
+"noise","a sound, especially an unwanted one"
+none,not any amount or number
+nor,used to connect two negative ideas
+normal,usual or expected condition
+normally,usually or in most cases
+north,the direction toward the top of a map
+northern,located in the north part of an area
+nose,the part of the face used for smelling
+not,used to make a word or sentence negative
+note,a short written message or comment
+"nothing","not anything, no single thing"
+notice,to see or become aware of something
+notion,an idea or belief about something
+"noun","a word that names a person, place, or thing"
+novel,a long written story book
+now,at the present time
+"nowadays","at the present time, compared to before"
+nowhere,not in or at any place
+nuclear,related to the energy from the atoms center
+number,a symbol or word that shows amount or order
+numerous,many in number
+nurse,a person who cares for sick people
+object,a thing that can be seen or touched
+objective,a goal or something aimed to achieve
+obligation,a duty or responsibility to do something
+observation,the act of watching or noticing carefully
+observe,to watch or notice something carefully
+obvious,easy to see or understand
+obviously,in a way that is clear or easy to see
+occasion,a particular time or event
+occasionally,sometimes but not often
+occupy,to live in or take control of a space
+occur,to happen or take place
+ocean,a very large body of salt water
+odd,strange or unusual
+of,used to show belonging or connection
+off,away from a place or position
+offense,an action that breaks a rule or law
+offer,to present or give something to someone
+office,a room or building where work is done
+officer,a person in a position of authority or command
+official,approved by authority or relating to an authority
+often,frequently or many times
+oil,a slippery liquid used for fuel or cooking
+okay,acceptable or all right
+old,having lived for many years
+on,positioned above or supported by something
+once,one time in the past
+"one","the number 1, a single person or thing"
+online,connected to the internet
+"only","no more than, solely"
+onto,moving to a surface or position on something
+open,not closed or allowing access
+opera,a dramatic musical performance with singing
+operate,to work or control a machine or system
+operation,an act of working or functioning
+operator,a person who controls a machine or system
+opinion,a personal belief or judgment
+opponent,a person who competes against another
+opportunity,a chance to do something
+oppose,to be against or resist something
+opposite,completely different or facing something else
+opposition,resistance or disagreement
+option,a choice or alternative
+or,used to connect choices or alternatives
+orange,a round citrus fruit or its color
+order,an arrangement or a request for something
+ordinary,normal or usual
+organic,relating to living matter or natural farming
+organization,a group with a common purpose
+organize,to arrange or put in order
+origin,the beginning or source of something
+"original","first or earliest, not copied"
+originally,at first or in the beginning
+other,different or additional
+otherwise,in a different way or if not
+ought,should or expected to
+ourselves,referring to us personally
+out,away from the inside or outside position
+outcome,the result or effect of something
+outline,a simple drawing showing main shapes or ideas
+output,the amount produced or sent out
+outside,the outer part or area of something
+over,above or higher than something else
+"overall","including everything, general or total"
+overcome,to successfully deal with a problem
+overseas,in or to a foreign country across the sea
+owe,to need to pay or give something back
+own,to have something as your property
+owner,a person who owns something
+ownership,the state of owning something
+pace,the speed at which something moves or happens
+pack,to put things into a container or bag
+package,a wrapped or boxed item for sending or selling
+page,one side of a sheet in a book or document
+pain,an unpleasant feeling in the body or mind
+paint,a colored liquid used to cover surfaces
+pair,two things that are similar and used together
+pale,light in color or having little color
+panel,a flat piece forming part of a surface or group
+panic,a sudden strong feeling of fear or worry
+paper,thin material used for writing or printing
+paragraph,a group of sentences about one idea
+parallel,two lines that are the same distance apart
+parent,a mother or father of a child
+park,a public green area for recreation
+part,a piece or section of something
+participant,a person who takes part in an activity
+participate,to take part in an activity or event
+participation,the act of taking part in something
+"particular","specific or special, not general"
+particularly,especially or more than usual
+partly,to some extent but not completely
+partner,a person who shares in an activity or relationship
+partnership,a relationship where people work together
+party,a social gathering or a group involved in something
+pass,to move past or through something
+passage,a way through or a section of text
+passenger,a person traveling in a vehicle but not driving
+passion,a very strong feeling or interest in something
+past,time before now
+path,a way or track to walk on
+patient,able to wait calmly
+pattern,a repeated design or model
+pause,a short stop or break
+pay,to give money for something
+payment,the act of giving money owed
+peace,a state without war or conflict
+peak,the highest point or top
+peer,a person of the same age or status
+pen,a tool for writing with ink
+penalty,a punishment for breaking a rule
+pension,regular money paid after retirement
+people,human beings in general
+per,for each or every
+perceive,to notice or become aware of
+percent,a part out of one hundred
+percentage,a portion expressed as a percent
+perception,the way you understand something
+perfect,without any mistakes or flaws
+perfectly,in a flawless or complete way
+perform,to carry out an action or task
+performance,how well someone does something
+perhaps,maybe or possibly
+period,a length of time
+permanent,lasting forever or a long time
+permission,approval to do something
+permit,to allow or give permission
+person,a human being
+personal,relating to an individual
+personality,the qualities that make someone unique
+personally,in a way that relates to oneself
+personnel,the people who work for an organization
+perspective,a particular way of looking at something
+persuade,to convince someone to do something
+phase,a stage in a process
+phenomenon,an observable event or fact
+philosophy,the study of basic ideas about life
+phone,a device to make voice calls
+photo,a picture taken with a camera
+photograph,a picture made using a camera
+phrase,a small group of words that go together
+physical,relating to the body or things you can touch
+piano,a large musical instrument with black and white keys
+pick,to choose or select something
+picture,an image or painting of something
+piece,a part or portion of something
+pig,a farm animal with a snout and curly tail
+pile,a group of things stacked on top of each other
+pilot,a person who flies an airplane
+pink,a light red color
+pipe,a tube used to carry water or gas
+pitch,to throw or the high or low sound of a
+place,a particular area or location
+plain,simple or not decorated
+plan,a detailed idea for doing something
+plane,a flat surface or an airplane
+planet,a large round object orbiting a star
+plant,a living thing that grows in the ground
+plastic,a material that can be shaped and is not natural
+plate,a flat dish for holding food
+platform,a raised flat surface or a base for something
+play,to take part in a game or activity
+player,a person who takes part in a game or sport
+pleasant,giving a feeling of happiness or enjoyment
+please,used to ask for something politely
+pleasure,a feeling of happiness or enjoyment
+plenty,a large amount or more than enough
+plot,the main events of a story or a secret plan
+plus,added to or more than
+pocket,a small bag sewn into clothes for carrying things
+poem,a piece of writing with rhythm and sometimes rhyme
+poet,a person who writes poems
+poetry,writing that expresses ideas with rhythm and style
+point,a sharp end or a specific idea or place
+police,people who enforce the law and keep order
+policy,a plan or set of rules to follow
+political,relating to government or public affairs
+politician,a person involved in government or politics
+politics,activities related to governing a country or area
+poll,a survey to find peoples opinions
+pollution,harmful substances in the environment
+pool,a small area of still water
+poor,having little money or resources
+"pop","a short, sharp sound or burst"
+popular,liked by many people
+population,all the people living in an area
+port,a place where ships load and unload
+portion,a part or share of something
+portrait,a painting or photo of a person
+pose,to hold a position for a photo or art
+position,a place or location of something
+positive,good or confident in attitude
+possess,to have or own something
+possession,something owned or controlled
+possibility,a chance that something may happen
+possible,able to be done or happen
+"possibly","maybe, it could happen"
+post,to send a letter or message
+pot,a container for cooking or plants
+potato,a starchy vegetable grown underground
+potential,ability to develop or succeed
+potentially,possibly but not yet certain
+pound,a unit of weight or to hit hard
+pour,to cause liquid to flow out
+poverty,the state of being very poor
+power,ability to do something or control
+powerful,having great strength or influence
+practical,useful and realistic in real life
+practice,to do something repeatedly to improve
+praise,to express approval or admiration
+pray,to speak to a god or higher power
+precise,exact and accurate
+precisely,exactly or accurately
+predict,to say what will happen before it does
+prefer,to like one thing more than another
+preference,a greater liking for one option
+pregnancy,the state of carrying a baby inside
+pregnant,having a baby developing inside
+premise,a statement or idea used as a basis
+preparation,the act of getting ready for something
+prepare,to make ready or get something ready
+presence,the state of being in a place
+present,to give or show something to others
+presentation,a talk or display to share information
+preserve,to keep something safe or in good condition
+president,the leader of a country or organization
+presidential,relating to a president or presidency
+press,to push or apply force on something
+pressure,the force applied to something by weight or force
+presumably,used to say something is likely true
+pretend,to act as if something is true when it is
+pretty,attractive in a delicate way
+prevent,to stop something from happening
+previous,coming before in time or order
+previously,before now or before a particular time
+price,the amount of money something costs
+pride,a feeling of satisfaction in oneself or others
+primarily,mainly or mostly
+primary,most important or first in order
+prime,of the best quality or main importance
+principal,the most important or main person or thing
+principle,a basic truth or rule to follow
+print,to produce text or images on paper
+printer,a machine that prints text or images
+prior,earlier in time or order
+priority,something considered more important than others
+prison,a place where people are kept as punishment
+prisoner,a person kept in prison
+private,belonging to one person or group only
+privilege,a special right or advantage
+prize,an award for winning or achievement
+"pro","in favor of something, a professional"
+probability,the chance that something will happen
+probably,likely to happen or be true
+problem,a matter that is difficult to deal with
+procedure,a set way of doing something
+proceed,to continue or go forward
+process,a series of actions to achieve something
+produce,to make or create something
+producer,a person or company that makes goods or services
+product,something made or grown to be sold
+production,the process of making or growing things
+profession,a type of job that needs special training
+professional,someone who does a job for pay
+professor,a teacher at a college or university
+profile,a short description of a person or thing
+profit,money earned after costs are paid
+program,a planned series of activities or events
+progress,moving forward or improving over time
+project,a planned piece of work or task
+promise,a statement that you will do something
+promote,to help or encourage something to grow
+promotion,an advance to a higher position or rank
+prompt,to cause or encourage someone to do something
+proof,evidence that shows something is true
+proper,correct or suitable for a situation
+properly,in the right or correct way
+property,something owned by a person or group
+proportion,a part or share of a whole
+proposal,a plan or suggestion for consideration
+propose,to suggest or offer an idea or plan
+prospect,the possibility of something happening
+protect,to keep safe from harm or danger
+protection,the act of keeping someone or something safe
+protein,a nutrient found in food that builds body tissue
+protest,a public show of disagreement or objection
+proud,feeling pleased about something you did
+prove,to show that something is true
+provide,to give or supply what is needed
+province,a region or area within a country
+provision,the act of supplying something needed
+psychological,relating to the mind or mental processes
+pub,a place where people drink and eat socially
+public,relating to all people or the community
+publication,something that is printed or shared with the public
+publisher,a person or company that prints books or media
+pull,to use force to move something toward you
+pump,a device that moves liquids or air
+pupil,a student in school or a persons eye opening
+purchase,to buy something
+pure,completely clean or natural
+purpose,the reason for doing something
+pursue,to follow or try to get
+push,to press something to move it
+put,to place something somewhere
+qualification,a skill or certificate earned
+qualify,to meet the needed requirements
+quality,how good something is
+quantity,how much of something there is
+quarter,one fourth part of something
+question,a sentence asking for information
+quick,done fast or in a short time
+quickly,in a fast or speedy way
+quiet,making little or no noise
+quietly,in a silent or soft way
+quite,to a considerable extent or degree
+quote,to repeat someones exact words
+race,a competition of speed
+racial,relating to race or ethnicity
+radical,very new and different
+radio,a device for receiving sound broadcasts
+rail,a bar of metal or wood for support
+rain,water falling from the sky
+raise,to lift or move something up
+random,without a specific pattern or order
+range,a set of different things or numbers
+rank,a position in a group or scale
+rapid,very fast or quick
+rapidly,happening very quickly
+rare,not common or unusual
+rarely,not often or seldom
+rat,a small rodent animal
+rate,to judge or assign a value
+rather,to some degree or somewhat
+ratio,a comparison of two amounts
+raw,not cooked or processed
+reach,to stretch out to touch or get
+react,to respond to something
+reaction,a response to an action or event
+read,to look at and understand written words
+reader,a person who reads
+ready,prepared to do something
+real,actually existing or true
+reality,the state of things as they are
+realize,to understand something clearly
+"really","in fact, truly"
+rear,the back part of something
+reason,a cause or explanation for something
+reasonable,fair and sensible
+reasonably,in a fair and sensible way
+recall,to remember something
+receive,to get or accept something
+recent,happening not long ago
+recently,a short time ago
+reckon,to think or believe
+recognition,accepting or noticing something
+recognize,to know someone or something seen before
+recommend,to suggest something as good
+recommendation,a suggestion or advice
+record,to write down or store information
+recover,to get better after illness or loss
+recovery,the process of getting better
+recruit,to find and hire new people
+red,a color like blood or fire
+reduce,to make something smaller or less
+reduction,the act of making smaller or less
+refer,to mention or direct attention to
+reference,a mention or source of information
+reflect,to show an image or think carefully
+reflection,an image seen in a mirror or water
+reform,to make changes to improve something
+refugee,a person fleeing danger or war
+refuse,to say no to something
+regard,to think about or consider
+regardless,without being affected by something
+region,a large area or part of a country
+regional,relating to a specific area
+register,to sign up or record information
+registration,the act of signing up or recording
+regret,feel sad or sorry about something
+regular,happening at fixed times or usual intervals
+regularly,happening often or at steady times
+regulate,control or manage by rules or laws
+regulation,a rule made to control behavior or actions
+reject,refuse to accept or believe something
+relate,show or make a connection between things
+relation,a connection or association between people or things
+relationship,the way two or more people or things are connected
+relative,considered in comparison to something else
+relatively,in comparison with something else
+relax,become less tense or anxious
+release,set free or allow to be known
+relevant,closely connected or important to the matter
+reliable,able to be trusted or depended on
+relief,a feeling of comfort after stress or pain
+religion,a system of beliefs about a god or gods
+religious,connected with religion or belief in god
+rely,depend on someone or something for help
+remain,stay in the same place or condition
+remark,say something as a comment
+remarkable,unusual and worth noticing
+remember,keep something in your mind
+remind,make someone think of something again
+remote,far away in distance or time
+remove,take something away from a place
+rent,pay money to use something temporarily
+repair,fix something that is broken or damaged
+repeat,say or do something again
+replace,put something new instead of old
+reply,answer or respond to a question or message
+report,give information about something seen or heard
+reporter,a person who writes or speaks news stories
+represent,stand for or act on behalf of someone
+representation,a picture or description of something
+representative,a person chosen to act for others
+reputation,what people generally think about someone
+request,ask for something politely
+require,need something for a purpose
+requirement,something that is needed or demanded
+rescue,to save someone from danger or harm
+research,careful study to find new information
+researcher,a person who studies or investigates
+reserve,to keep something for future use
+resident,a person who lives in a place
+resign,to quit a job or position
+resist,to fight against or refuse to accept
+resistance,the act of fighting against something
+resolution,a firm decision or solution to a problem
+resolve,to find a solution or decide firmly
+resort,a place for relaxation or vacation
+resource,a supply of useful materials or help
+respect,to show care or admiration for someone
+respectively,in the order given or mentioned
+respond,to answer or reply to something
+response,an answer or reaction to something
+responsibility,a duty or job to take care of
+responsible,being in charge or trustworthy
+rest,to stop working and relax
+restaurant,a place where people buy and eat food
+restore,to bring back to a good condition
+restrict,to limit or control something
+restriction,a rule that limits or controls
+result,something that happens because of an action
+retail,selling goods directly to customers
+retain,to keep or hold onto something
+retire,to stop working after a career
+retirement,the time when someone stops working
+return,to go back to a place or person
+reveal,to show or make something known
+revenue,money earned by a business or government
+reverse,to go backward or change direction
+review,to look over or examine again
+revise,to change or improve something written
+revolution,a big change in government or ideas
+reward,something given for good work or behavior
+rice,a common grain used as food
+rich,having a lot of money or valuable things
+rid,to get free of something unwanted
+ride,to sit on and control a moving animal or vehicle
+"right","correct or true, opposite of left"
+ring,a small circular band worn on a finger
+rise,to move upward or get up
+risk,the chance of something bad happening
+rival,a person or thing competing against another
+river,a large natural stream of flowing water
+road,a path for vehicles or travel
+rock,a hard natural mineral material
+role,the function or part played by someone
+roll,to move by turning over and over
+romantic,relating to love or strong feelings
+roof,the top covering of a building
+room,a space inside a building for use
+root,the part of a plant underground
+rose,a type of flower with thorns
+rough,not smooth or even in texture
+roughly,approximately or in a rough way
+round,shaped like a circle or sphere
+route,a way or path to a place
+routine,a regular or usual way of doing things
+row,a line of things or people
+royal,relating to a king or queen
+ruin,to destroy or damage completely
+rule,a guideline or control to follow
+run,to move quickly on foot
+rural,relating to the countryside
+rush,to move quickly or hurry
+sad,feeling unhappy or sorrowful
+safe,protected from harm or danger
+safety,the condition of being safe
+sail,to travel on water using a boats sails
+sake,for the purpose or benefit of something
+salary,money paid regularly for work done
+sale,the act of selling something
+salt,a common white seasoning or mineral
+same,identical or not different
+sample,a small part representing the whole
+sanction,official permission or penalty for action
+sand,small grains of rock found on beaches
+satisfaction,the feeling of being pleased or content
+satisfy,to make someone feel pleased or content
+save,to keep safe or store for later use
+say,to speak words aloud
+scale,a tool for measuring weight or size
+scan,to look over quickly or examine closely
+scare,to cause fear or frighten someone
+scene,a part of a play or event location
+schedule,a plan of times for events or tasks
+scheme,a secret or clever plan
+scholar,a person who studies and knows a lot
+school,a place where people learn
+science,the study of the natural world
+scientific,related to science or careful study
+scientist,a person who studies science
+scope,the range or extent of something
+score,to gain points in a game or test
+scream,to shout loudly in fear or pain
+screen,a flat surface for showing images or a barrier
+sea,a large body of salt water
+seal,an animal or to close something tightly
+search,to look carefully for something
+season,one of the four parts of the year
+seat,a place to sit
+second,the unit of time or the position after first
+secondary,coming after the first in importance or order
+secondly,used to introduce the second point
+secret,something kept hidden or unknown
+secretary,a person who helps with office work
+section,a part of something larger
+sector,a part or division of an area or economy
+secure,to make safe or protect
+security,protection from danger or harm
+see,to use your eyes to look at something
+seed,a small part from which a plant grows
+seek,to look for or try to find
+seem,to appear to be something
+segment,a part or piece of something whole
+select,to choose from a group
+selection,the act of choosing or a chosen group
+self,a persons own identity or being
+sell,give something for money
+send,cause to go or be taken somewhere
+senior,older or higher in rank or status
+sense,ability to feel or understand something
+sensitive,easily affected or hurt by something
+sentence,a group of words expressing a complete thought
+separate,to cause to be apart or divided
+sequence,a particular order of things or events
+series,a number of similar things in order
+serious,important or not joking
+seriously,in a thoughtful or sincere way
+servant,a person who works for another person
+serve,to provide or offer help or food
+server,a person or computer that provides services
+service,work done to help or serve others
+session,a period of time set for an activity
+set,a group of things considered together
+settle,to resolve or make a place home
+settlement,an agreement or a small community
+several,more than two but not many
+severe,very bad or intense
+sex,the state of being male or female
+sexual,relating to sex or reproduction
+shade,a slight darkness caused by blocking light
+shadow,a dark shape made by blocking light
+shake,to move quickly back and forth
+shall,used to express future action or intention
+shape,the form or outline of something
+share,to divide and give part to others
+shareholder,a person who owns part of a company
+sharp,having a thin edge or point
+she,used to refer to a female person
+sheep,a woolly farm animal
+sheet,a large piece of cloth or paper
+shelf,a flat board for holding things
+shell,the hard outer covering of something
+shelter,a place giving protection or safety
+shift,to move or change position
+shine,to give off light or brightness
+ship,a large boat for traveling on water
+shirt,a piece of clothing worn on the upper body
+shock,a sudden surprise or strong feeling
+shoe,a covering for the foot
+shoot,to fire a gun or take a photo
+shop,a place to buy goods
+shore,land along the edge of a sea or lake
+short,not long in length or duration
+shot,an attempt to hit or shoot something
+should,used to indicate obligation or advice
+shoulder,the part of the body between neck and arm
+shout,to say something loudly
+show,to display or allow to be seen
+shower,a brief fall of rain or a bathroom fixture
+shut,to close something
+sick,ill or unwell
+side,a surface or part of something
+sigh,to breathe out slowly expressing tiredness or sadness
+sight,the ability to see or something seen
+sign,a symbol or notice giving information
+signal,a gesture or sound to convey information
+significance,importance or meaning of something
+significant,important or meaningful
+significantly,in an important or noticeable way
+silence,complete absence of sound
+silent,not making any sound
+silly,showing a lack of good sense or foolish
+silver,a shiny gray-white metal
+similar,almost the same but not exactly
+similarly,in a like manner
+simple,easy to understand or do
+simply,in a straightforward or plain way
+since,from a past time until now
+sing,to make musical sounds with the voice
+singer,a person who sings
+"single","one only, not one of several"
+sink,to go down below the surface of water
+sir,a polite form of address for a man
+sister,a female sibling
+sit,to rest with the body supported by the buttocks
+site,a location or place
+situate,to place or locate in a particular position
+situation,a set of circumstances or conditions
+size,how big or small something is
+ski,to glide on snow using skis
+skill,the ability to do something well
+skin,the outer layer covering the body
+skirt,a piece of clothing worn around the waist
+sky,the space above the earth seen from below
+slave,a person owned and controlled by another
+sleep,to rest with eyes closed and unconscious
+"slice","a thin, flat piece cut from something"
+slide,to move smoothly over a surface
+slight,small in degree or amount
+slightly,a little bit or to a small extent
+slip,to slide accidentally and lose balance
+"slope","a surface that is not flat, inclined"
+slow,moving or happening at a low speed
+slowly,at a low speed or pace
+small,not large in size or amount
+smart,intelligent or well-dressed
+smell,to sense an odor with the nose
+smile,to make a happy or friendly facial expression
+smoke,the visible gas from burning material
+smooth,having an even and regular surface
+snap,to break suddenly with a sharp sound
+snow,frozen white flakes falling from the sky
+so,to a great extent or degree
+social,relating to people and their interactions
+society,a group of people living together
+soft,not hard or firm to the touch
+software,programs used by a computer
+soil,the top layer of earth where plants grow
+solar,relating to the sun
+soldier,a person who serves in the army
+solid,firm and stable in shape
+solution,an answer to a problem
+solve,to find an answer or explanation
+some,an unspecified amount or number
+somebody,an unknown or unspecified person
+somehow,in a way that is not known or clear
+someone,an unknown or unspecified person
+something,an unknown or unspecified thing
+sometimes,at certain times but not always
+somewhat,to a small degree or extent
+somewhere,in or at an unknown place
+son,a male child of parents
+song,a short piece of music with words
+soon,in a short time from now
+sorry,feeling regret or apology
+sort,a type or kind of something
+soul,the spiritual part of a person
+sound,vibrations heard by the ear
+source,the place where something begins
+south,the direction opposite of north
+southern,located in the south part
+space,the area beyond the earths atmosphere
+spare,extra or available to use
+speak,to say words aloud
+speaker,a person who talks or a device that plays sound
+special,different from usual or ordinary
+specialist,a person skilled in one area
+specialize,to focus on one area of work
+species,a group of similar living things
+specific,clearly defined or identified
+specifically,in a clear and exact way
+specify,to state something clearly and exactly
+speech,the act of talking or a formal talk
+speed,how fast something moves
+spell,to name or write letters in order
+spend,to use money or time
+spin,to turn around quickly
+spirit,the non-physical part of a person
+split,to divide into parts
+sponsor,a person or group that supports something
+sport,a physical game or activity
+spot,a small mark or place
+spread,to open or move over a larger area
+spring,the season after winter or to jump up
+square,a shape with four equal sides
+stability,the state of being steady or firm
+stable,a building for keeping horses or animals
+staff,a group of workers or employees
+stage,a raised platform for performances
+stain,a mark that is hard to remove
+stair,a step or set of steps
+stake,a wooden or metal post in the ground
+stamp,a small piece of paper for mailing letters
+stand,to be upright on your feet
+standard,a level of quality or measurement
+star,a bright point of light in the sky
+stare,to look at something fixedly
+start,to begin or set in motion
+state,a condition or a country or region
+statement,a clear expression of something said or written
+station,a place where services or transport stop
+statistic,a number representing data or information
+status,a persons social or professional position
+stay,to remain in a place temporarily
+steady,firmly fixed or not changing
+steal,to take something without permission
+steel,a strong metal made from iron
+stem,the main stalk of a plant
+step,to lift and set down a foot
+stick,a thin piece of wood
+still,not moving or making a sound
+stimulate,to encourage activity or growth
+stir,to mix by moving a spoon or stick
+stock,goods kept for sale or supply
+stomach,the organ that digests food
+stone,a small hard piece of rock
+stop,to cease moving or doing something
+storage,a place or method for keeping things
+store,a place where goods are sold
+storm,a violent weather event with wind and rain
+story,a description of events or a tale
+straight,not bent or curved
+strain,to stretch or pull tightly
+strange,unusual or surprising
+stranger,a person you do not know
+strategy,a plan for achieving a goal
+"stream","a small, flowing body of water"
+street,a public road in a city or town
+strength,the quality of being strong or powerful
+strengthen,to make stronger or more powerful
+stress,pressure or tension on a person or thing
+stretch,to make something longer or wider
+strict,demanding that rules are followed exactly
+strike,to hit or attack someone or something
+string,a thin piece of twisted thread or cord
+strip,to remove clothes or coverings from something
+stroke,a gentle movement of the hand over a surface
+strong,having great physical power or force
+strongly,in a powerful or forceful way
+structural,relating to the arrangement of parts in something
+structure,the way parts are arranged or organized
+struggle,to try very hard to do something difficult
+student,a person who is learning at a school or college
+"studio","a room where art, music, or work is done"
+study,to spend time learning about a subject
+stuff,things or materials of various kinds
+stupid,lacking intelligence or common sense
+style,a particular way of doing or presenting something
+subject,a person or thing being discussed or studied
+submit,to give something for approval or consideration
+subsequent,coming after something else in time
+subsequently,happening after something else has occurred
+substance,a type of material or matter
+substantial,large in amount or importance
+substitute,a person or thing that takes the place of another
+succeed,to achieve a desired result or goal
+success,the achievement of a goal or aim
+successful,having achieved a desired result
+successfully,in a way that achieves a goal
+such,of the type or kind just mentioned
+sudden,happening quickly without warning
+suddenly,happening quickly and unexpectedly
+"suffer","to experience pain, loss, or hardship"
+sufficient,enough to meet the need or purpose
+sugar,a sweet substance used in food and drinks
+suggest,to offer an idea or plan for consideration
+suggestion,an idea or plan offered for consideration
+suit,a set of clothes worn together
+suitable,right or appropriate for a purpose
+sum,the total amount or number
+summarize,to give a brief statement of main points
+summary,a short statement of the main points
+summer,the warmest season of the year
+sun,the star that gives light and heat to Earth
+supplement,something added to complete or improve
+supplier,a person or company that provides goods
+supply,to provide what is needed or wanted
+support,to give help or assistance
+supporter,a person who backs or helps someone
+suppose,to think or assume something is true
+sure,certain or confident about something
+surely,used to express confidence or surprise
+surface,the outer or top layer of something
+surgery,medical treatment involving an operation
+surprise,an unexpected event or feeling
+surprisingly,in a way that causes surprise
+surround,to be all around something
+survey,to look over or examine carefully
+survival,the act of staying alive
+survive,to continue living after danger or difficulty
+suspect,to think someone may be guilty or true
+suspend,to temporarily stop or hang something
+sustain,to keep something going or maintain
+swear,to promise seriously or use bad language
+sweep,to clean by brushing away dirt
+sweet,having a sugary taste or kind nature
+swim,to move through water using limbs
+swing,to move back and forth or hang loosely
+switch,to change from one thing to another
+symbol,a sign that represents something else
+symptom,a sign of illness or problem
+system,a group of connected parts working together
+table,a piece of furniture with a flat top
+tackle,to try to deal with a problem or catch someone
+tail,the rear part of an animal or object
+take,to get or hold something from a place or person
+tale,a story about real or imaginary events
+talent,a natural ability to do something well
+talk,to speak or have a conversation
+tall,having great height
+tank,a large container for holding liquid or gas
+tap,a device for controlling water flow
+tape,a narrow strip used for sticking things
+target,an object aimed at or intended to hit
+task,a piece of work to be done
+taste,the sense that detects flavors
+tax,money paid to the government
+taxi,a car for hire with a driver
+tea,a hot drink made from leaves
+teach,to help someone learn something
+teacher,a person who helps others learn
+team,a group working together
+tear,to rip or pull apart
+technical,relating to a specific skill or field
+technique,a way of doing something skillfully
+technology,tools and machines used to solve problems
+teenager,a person aged 13 to 19 years
+telephone,a device for talking over distances
+television,a device for watching shows and news
+tell,to say something to someone
+temperature,how hot or cold something is
+temporary,lasting for a short time
+tend,to usually do or be likely to do
+tendency,a usual way of behaving or thinking
+tender,showing gentleness or care
+tennis,a sport played with rackets and a ball
+tension,mental or emotional strain
+tent,a portable shelter made of cloth
+term,a word or phrase with a specific meaning
+terrible,very bad or unpleasant
+territory,an area of land controlled by someone
+terrorist,a person who uses violence for political aims
+test,a way to check knowledge or ability
+"text","written words, especially in a book or message"
+than,used to compare two things
+thank,to express gratitude to someone
+that,used to identify a specific person or thing
+the,used to refer to something already known
+theater,a place where plays or movies are shown
+theme,main subject or idea of something
+themselves,refers back to a group of people
+then,at that time or next in order
+theoretical,based on ideas rather than practice
+theory,an idea explaining something
+therapy,treatment to help with health problems
+there,in or at that place
+therefore,for that reason or so
+they,used to refer to people or things
+thick,having a large distance between sides
+thin,having little distance between sides
+thing,an object or item
+think,to use your mind to decide or believe
+thirst,a need to drink something
+this,used to show something close or present
+though,despite the fact or although
+threat,a warning of possible harm
+threaten,to say you will cause harm
+throat,the front part inside your neck
+through,from one side to the other
+throughout,in every part of something
+throw,to send something through the air by hand
+thus,in this way or so
+ticket,a paper or card for entry or travel
+tie,to fasten with a string or rope
+tight,fitting closely without space
+till,up to the time of
+time,a measured period or moment
+tiny,very small in size
+tip,the pointed end or a small piece of advice
+tire,to become weary or a rubber covering for a wheel
+tissue,a piece of soft paper or body cells
+"title","the name of a book, movie, or work"
+to,used to show direction or purpose
+today,on this day or the present day
+together,with each other or in one place
+tomorrow,the day after today
+tone,the quality or sound of a voice or music
+tongue,the muscle inside the mouth used for tasting and speaking
+tonight,during the night of this day
+"too","also, more than enough"
+tool,a device used to do work or make things
+tooth,a hard part in the mouth used for biting
+top,the highest part or point of something
+topic,the subject being discussed or written about
+total,the whole amount or number
+"totally","completely, entirely"
+touch,to put your hand or fingers on something
+tough,strong and difficult to break or deal with
+tour,a trip to see places or things
+tourism,the business of traveling for pleasure
+tourist,a person who travels for pleasure
+tournament,a competition with many players or teams
+toward,in the direction of something
+"tower","a tall, narrow building or structure"
+"town","a place where people live, smaller than a city"
+toy,an object for children to play with
+trace,a small sign or amount of something
+track,a path or course for moving along
+trade,the buying and selling of goods or services
+tradition,a custom or belief passed down over time
+traditional,following long-established customs or ways
+traffic,vehicles moving on roads or people moving in a place
+trail,a path through a natural area
+train,a series of connected vehicles that run on tracks
+transfer,to move from one place to another
+transform,to change completely in form or appearance
+transition,the process of changing from one state to another
+translate,to change words from one language to another
+transport,to carry people or goods from one place to another
+transportation,the system or means of moving people or goods
+trap,a device or method for catching something
+travel,to go from one place to another
+treat,to act in a certain way toward someone or something
+treatment,care given to improve health or condition
+tree,a tall plant with a trunk and branches
+trend,a general direction in which something is changing or developing
+trial,a test or experiment to see how something works
+trick,a clever action meant to deceive or surprise
+trigger,to cause something to start or happen
+trip,a journey to a place and back again
+troop,a group of people or soldiers
+trouble,problems or difficulties
+truck,a large vehicle for carrying goods
+"true","correct or real, not false"
+truly,in a sincere or real way
+trust,to believe someone will do what is right
+"truth","a fact or reality, not a lie"
+try,to make an effort to do something
+tube,a long hollow cylinder or pipe
+tune,a melody or song
+turn,to change direction or position
+twice,two times
+twin,one of two children born at the same birth
+twist,to bend or turn something
+type,a category or kind of something
+typical,usual or normal for a person or thing
+typically,usually or normally
+ugly,unpleasant to look at
+ultimately,in the end or finally
+unable,not able to do something
+uncertainty,doubt or lack of sure knowledge
+uncle,the brother of your parent
+unclear,not easy to understand or see
+under,below or beneath something
+undergo,to experience or go through something
+underlie,to be the cause or basis of something
+understand,to know the meaning of something
+undertake,to begin or take on a task
+unemployment,the state of not having a job
+unfortunately,used to say something bad happened
+uniform,clothing worn by members of a group
+union,a group joined together for a purpose
+"unique","one of a kind, unlike any other"
+unit,a single thing or part of something larger
+unite,to come together as one
+universal,applying to all people or things everywhere
+"universe","all space, time, matter, and energy that exist"
+university,a school for higher education and research
+unknown,not known or familiar
+unless,except if something happens
+unlike,different from or not similar to
+unlikely,not likely to happen
+until,up to the time when something happens
+unusual,not common or normal
+up,toward a higher place or position
+update,to make something more modern or accurate
+upon,on or immediately after something
+upper,higher in position or level
+upset,unhappy or worried
+urban,relating to a city or town
+urge,a strong desire or need to do something
+use,to do something with a purpose
+useful,helpful or able to be used well
+user,a person who uses something
+usual,normal or regular
+usually,most of the time
+valley,low land between hills or mountains
+valuable,worth a lot of money or importance
+value,how much something is worth
+van,a vehicle for carrying goods or people
+variable,something that can change or vary
+variation,a change or difference in something
+variety,a number of different things
+various,different kinds of something
+vary,to change or be different
+vast,very large in size or amount
+vegetable,a plant or part eaten as food
+vehicle,a machine used for transport
+venture,a risky or new business activity
+verb,a word that shows action or state
+version,a form or type of something
+versus,against or compared to
+very,to a high degree or extremely
+vessel,a container or ship for carrying things
+veteran,a person with long experience or military service
+via,by way of or through a place or method
+vice,a bad habit or immoral behavior
+victim,a person harmed by something bad
+victory,winning in a contest or battle
+video,a recording of moving images and sound
+view,to look at or see something
+village,a small group of houses in the countryside
+violence,use of physical force to hurt others
+violent,using strong physical force causing harm
+"virtually","almost or nearly, but not completely"
+virus,a tiny germ that can cause illness
+visible,able to be seen with the eyes
+vision,the ability to see or imagine
+visit,to go see someone or someplace
+visitor,a person who goes to see someone
+visual,related to seeing or sight
+vital,very important or necessary for life
+voice,the sound made when speaking or singing
+volume,the amount of sound or space inside
+"voluntary","done by choice, not forced"
+volunteer,a person who offers to help freely
+vote,to choose or decide by expressing opinion
+voter,a person who votes in an election
+wage,money earned for work done
+wait,to stay until something happens
+wake,to stop sleeping or cause to stop
+walk,to move on foot at a normal pace
+wall,a vertical structure that divides or supports
+wander,to move around without a fixed direction
+want,to desire or wish for something
+war,a fight between countries or groups
+warm,having a moderately high temperature
+warn,to tell someone about possible danger
+wash,to clean with water and soap
+waste,to use carelessly or throw away
+watch,to look at something carefully
+water,a clear liquid needed for life
+wave,to move hand to greet or signal
+way,a method or path to get somewhere
+we,used by a speaker to include themselves and others
+weak,not strong or easily broken or hurt
+weakness,a lack of strength or power
+wealth,a large amount of money or possessions
+wealthy,having a lot of money or possessions
+weapon,an object used to cause harm or damage
+wear,to have clothes or accessories on your body
+"weather","the state of the air outside, like rain or sun"
+web,a network of fine threads made by a spider
+website,a set of related web pages on the internet
+wed,to get married to someone
+week,a period of seven days
+"weekend","the end of the week, usually Saturday and Sunday"
+weekly,happening once every week
+weigh,to find out how heavy something is
+weight,how heavy something is
+weird,strange or unusual
+welcome,a friendly greeting or reception
+welfare,help or support for people in need
+well,in a good or healthy way
+west,the direction where the sun sets
+western,relating to the west or Western countries
+wet,covered or soaked with water
+what,asking for information about something
+"whatever","anything or everything, no matter what"
+wheel,a round object that turns and helps movement
+when,at what time
+whenever,at any time that
+where,in or at what place
+whereas,used to show contrast between two facts
+wherever,in or at any place that
+whether,expressing a choice between options
+which,asking to choose one or more from a set
+while,during the time that
+whilst,during the time that (formal or old-fashioned)
+whisper,to speak very quietly
+white,the color of snow or milk
+who,asking about a person
+whole,complete or entire
+why,asking for a reason
+wide,measuring a large distance from side to side
+widely,over a large area or by many people
+wife,a married woman
+"wild","living in nature, not tame"
+will,a legal paper for property after death
+win,to be first or succeed in a contest
+wind,air moving outside
+window,an opening in a wall with glass
+wine,an alcoholic drink made from grapes
+wing,a part of a bird or airplane for flying
+winner,a person who wins
+winter,the coldest season of the year
+wipe,to clean by rubbing
+wire,a thin metal thread
+wise,showing good judgment or knowledge
+wish,to want something to happen
+with,together or having
+withdraw,to take back or remove
+within,inside or inside the limits of
+without,not having or lacking
+witness,a person who sees an event happen
+woman,an adult female human
+wonder,to feel curiosity or amazement
+wonderful,very good or amazing
+wood,material from trees
+wooden,made of wood
+word,a unit of language
+work,to do a job or task
+worker,a person who works
+world,the Earth and all life on it
+worry,to feel anxious or concerned
+worth,having value or importance
+would,used to show a condition or future in the past
+wound,an injury to the body
+wrap,to cover something by folding
+write,to form letters or words on paper
+writer,a person who writes
+wrong,not correct or true
+yard,an area of land next to a house
+yeah,informal yes
+year,a period of 12 months
+yellow,a color like ripe lemons
+yes,used to agree or confirm something
+yesterday,the day before today
+"yet","up to now, still"
+yield,to give way or produce something
+you,used to refer to the person spoken to
+young,having lived for a short time
+yourself,used to emphasize the person spoken to
+youth,the time when someone is young
+zone,an area with specific characteristics or rules
