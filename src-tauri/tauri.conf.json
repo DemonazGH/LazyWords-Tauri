@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-app",
-  "version": "0.1.0",
-  "identifier": "com.dzmitry.tauri-app",
+  "productName": "LazyWords",
+  "version": "1.0.0",
+  "identifier": "com.lazywords.app",
   "build": {
     "frontendDist": "../src"
   },
