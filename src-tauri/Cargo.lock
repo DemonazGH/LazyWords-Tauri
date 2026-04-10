@@ -2033,6 +2033,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "lazywords"
+version = "1.0.1"
+dependencies = [
+ "calamine",
+ "chrono",
+ "csv",
+ "png 0.17.16",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "sys-locale",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-opener",
+ "tokio",
+ "winapi",
+]
+
+[[package]]
 name = "leb128fmt"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3861,29 +3884,6 @@ dependencies = [
  "webview2-com",
  "window-vibrancy",
  "windows",
-]
-
-[[package]]
-name = "tauri-app"
-version = "0.1.0"
-dependencies = [
- "calamine",
- "chrono",
- "csv",
- "png 0.17.16",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "sys-locale",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-opener",
- "tokio",
- "winapi",
 ]
 
 [[package]]
