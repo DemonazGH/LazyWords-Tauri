@@ -4,8 +4,7 @@
 
 LazyWords shows word flashcards as a floating overlay on top of any window. No sessions, no drilling, no app switching. Just keep working — the words come to you.
 
-<!-- REPLACE THIS LINE WITH YOUR GIF: record a 10-sec clip of a card appearing over VS Code or a browser, then drop it here -->
-<!-- ![LazyWords demo](docs/demo.gif) -->
+![LazyWords demo](gf.gif)
 
 ---
 
