@@ -12,6 +12,8 @@ pub struct Settings {
     pub fade_duration: f32,
     pub active_dictionary: String,
     pub auto_start: bool,
+    #[serde(default)]
+    pub msix_startup_initialized: bool,
     pub first_launch: bool,
     pub language: String,
 }
@@ -26,9 +28,17 @@ impl Default for Settings {
             fade_duration: 0.5,
             active_dictionary: String::new(),
             auto_start: true,
+            msix_startup_initialized: false,
             first_launch: true,
             language: "auto".to_string(),
         }
+    }
+}
+
+impl Settings {
+    pub fn needs_onboarding(&self) -> bool {
+        // Recover profiles stranded by older builds clearing firstLaunch too early.
+        self.first_launch || self.active_dictionary.is_empty()
     }
 }
 
@@ -46,12 +56,17 @@ pub fn load_settings(path: &Path) -> Settings {
 }
 
 pub fn save_settings(path: &Path, settings: &Settings) {
+    if let Err(error) = try_save_settings(path, settings) {
+        eprintln!("Failed to save settings: {error}");
+    }
+}
+
+pub fn try_save_settings(path: &Path, settings: &Settings) -> Result<(), String> {
     if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     }
-    if let Ok(data) = serde_json::to_string_pretty(settings) {
-        let _ = fs::write(path, data);
-    }
+    let data = serde_json::to_string_pretty(settings).map_err(|error| error.to_string())?;
+    fs::write(path, data).map_err(|error| error.to_string())
 }
 
 #[cfg(test)]
@@ -84,6 +99,53 @@ mod tests {
         assert_eq!(restored.position, original.position);
         assert_eq!(restored.language, original.language);
         assert_eq!(restored.auto_start, original.auto_start);
+        assert_eq!(restored.msix_startup_initialized, original.msix_startup_initialized);
         assert_eq!(restored.first_launch, original.first_launch);
+    }
+
+    #[test]
+    fn legacy_settings_migrate_msix_startup_only_once() {
+        let mut json = serde_json::to_value(Settings::default()).unwrap();
+        json.as_object_mut().unwrap().remove("msixStartupInitialized");
+        let mut settings: Settings = serde_json::from_value(json).unwrap();
+        assert!(!settings.msix_startup_initialized);
+        settings.msix_startup_initialized = true;
+        let restored: Settings = serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
+        assert!(restored.msix_startup_initialized);
+    }
+
+    #[test]
+    fn interrupted_first_launch_still_needs_onboarding() {
+        let settings = Settings::default();
+        let restored: Settings = serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
+        assert!(restored.first_launch);
+        assert!(restored.needs_onboarding());
+    }
+
+    #[test]
+    fn recovers_legacy_empty_dictionary_profile() {
+        let mut settings = Settings::default();
+        settings.first_launch = false;
+        assert!(settings.needs_onboarding());
+    }
+
+    #[test]
+    fn completed_selection_does_not_repeat_onboarding() {
+        let mut settings = Settings::default();
+        settings.active_dictionary = "en-ru".into();
+        settings.first_launch = false;
+        assert!(!settings.needs_onboarding());
+    }
+
+    #[test]
+    fn explicit_first_launch_is_respected_with_a_dictionary() {
+        let mut settings = Settings::default();
+        settings.active_dictionary = "en-ru".into();
+        assert!(settings.needs_onboarding());
+    }
+
+    #[test]
+    fn settings_write_failure_is_reported() {
+        assert!(try_save_settings(Path::new("."), &Settings::default()).is_err());
     }
 }

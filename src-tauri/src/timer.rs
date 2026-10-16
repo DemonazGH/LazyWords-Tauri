@@ -2,6 +2,43 @@ use tauri::{AppHandle, Manager};
 use std::time::Duration;
 use crate::state::AppState;
 use tauri::Emitter;
+use std::sync::Mutex;
+use tokio::sync::Notify;
+
+#[derive(Debug, PartialEq, Eq)]
+enum IntervalEvent {
+    Tick,
+    Manual,
+    Completion,
+}
+
+async fn wait_for_completion(pending: &Mutex<bool>, notify: &Notify) {
+    loop {
+        let notification = notify.notified();
+        tokio::pin!(notification);
+        // Register before checking the flag so a concurrent notification cannot be missed.
+        notification.as_mut().enable();
+        if *pending.lock().unwrap() {
+            return;
+        }
+        // A notification left over from a completed/cancelled event must not hide a new card.
+        notification.await;
+    }
+}
+
+async fn wait_for_interval_event(
+    pending: &Mutex<bool>,
+    completion: &Notify,
+    manual: &Notify,
+    tick: Duration,
+) -> IntervalEvent {
+    tokio::select! {
+        biased;
+        _ = wait_for_completion(pending, completion) => IntervalEvent::Completion,
+        _ = manual.notified() => IntervalEvent::Manual,
+        _ = tokio::time::sleep(tick) => IntervalEvent::Tick,
+    }
+}
 
 // ── Fullscreen detection (Windows only) ──────────────────────────────────────
 
@@ -92,18 +129,13 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
                 {
                     let app_state = app.state::<AppState>();
                     let mut settings = app_state.settings.lock().unwrap();
+                    let learned_indices = learned_map.get(dict_id).cloned().unwrap_or_default();
+                    let mut engine = app_state.word_engine.lock().unwrap();
+                    engine.load_dictionary(words);
+                    engine.set_learned(learned_indices);
                     settings.active_dictionary = dict_id.clone();
                     let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
                     crate::settings::save_settings(&path, &settings);
-                }
-
-                // Load new dictionary into engine
-                {
-                    let app_state = app.state::<AppState>();
-                    let mut engine = app_state.word_engine.lock().unwrap();
-                    engine.load_dictionary(words);
-                    let learned_indices = learned_map.get(dict_id).cloned().unwrap_or_default();
-                    engine.set_learned(learned_indices);
                 }
 
                 // Notify settings window and card
@@ -146,7 +178,7 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
 pub fn start_loop(app_handle: AppHandle) {
     tauri::async_runtime::spawn(async move {
         let mut skip_interval = true; // show first card immediately on startup
-        loop {
+        'timer: loop {
             // ── Idle: no dictionary selected yet (onboarding) ─────────────────
             if app_handle.state::<AppState>().settings.lock().unwrap().active_dictionary.is_empty() {
                 tokio::time::sleep(Duration::from_secs(5)).await;
@@ -171,18 +203,21 @@ pub fn start_loop(app_handle: AppHandle) {
                 skip_interval = false;
             } else {
                 let mut waited = 0.0f32;
-                let mut manual = false;
-                'interval: loop {
+                loop {
                     let interval_secs = app_handle.state::<AppState>().settings.lock().unwrap().interval * 60.0;
                     if waited >= interval_secs { break; }
                     let app_state = app_handle.state::<AppState>();
-                    tokio::select! {
-                        _ = tokio::time::sleep(Duration::from_secs(1)) => { waited += 1.0; }
-                        _ = app_state.manual_trigger.notified() => { manual = true; break 'interval; }
+                    match wait_for_interval_event(
+                        &app_state.all_learned,
+                        &app_state.all_learned_notify,
+                        &app_state.manual_trigger,
+                        Duration::from_secs(1),
+                    ).await {
+                        IntervalEvent::Tick => waited += 1.0,
+                        // Manual cards are already shown; completion is handled at the top.
+                        IntervalEvent::Manual | IntervalEvent::Completion => continue 'timer,
                     }
                 }
-                // Manual trigger fired — card already shown by shortcut/tray; reset interval
-                if manual { continue; }
             }
 
             // Skip if paused
@@ -192,7 +227,12 @@ pub fn start_loop(app_handle: AppHandle) {
             if is_fullscreen_app_active() { continue; }
 
             // Fetch random word
-            let entry = app_handle.state::<AppState>().word_engine.lock().unwrap().get_random_word();
+            let (dict_id, entry) = {
+                let state = app_handle.state::<AppState>();
+                let settings = state.settings.lock().unwrap();
+                let entry = state.word_engine.lock().unwrap().get_random_word();
+                (settings.active_dictionary.clone(), entry)
+            };
 
             if let Some(word) = entry {
                 // Set current word in state (used by Ctrl+Shift+K guard in card.js)
@@ -218,7 +258,8 @@ pub fn start_loop(app_handle: AppHandle) {
                 let _ = app_handle.emit("show-word", serde_json::json!({
                     "term": word.entry.term,
                     "definition": word.entry.definition,
-                    "index": word.index
+                    "index": word.index,
+                    "dictId": dict_id
                 }));
 
                 // Hide after show_duration — but wake early if all_learned is signalled
@@ -226,7 +267,7 @@ pub fn start_loop(app_handle: AppHandle) {
                 let app_state = app_handle.state::<AppState>();
                 tokio::select! {
                     _ = tokio::time::sleep(Duration::from_secs_f32(show_secs)) => {}
-                    _ = app_state.all_learned_notify.notified() => {}
+                    _ = wait_for_completion(&app_state.all_learned, &app_state.all_learned_notify) => {}
                 }
                 let _ = app_handle.emit("hide-word", ());
 
@@ -245,4 +286,111 @@ pub fn start_loop(app_handle: AppHandle) {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const LONG_WAIT: Duration = Duration::from_secs(30 * 60);
+    const TEST_TIMEOUT: Duration = Duration::from_millis(100);
+
+    #[tokio::test]
+    async fn completion_interrupts_interval_after_wait_has_started() {
+        let pending = Mutex::new(false);
+        let completion = Notify::new();
+        let manual = Notify::new();
+        let wait = wait_for_interval_event(&pending, &completion, &manual, LONG_WAIT);
+        tokio::pin!(wait);
+        tokio::select! {
+            biased;
+            event = &mut wait => panic!("unexpected event: {event:?}"),
+            _ = async {} => {}
+        }
+
+        *pending.lock().unwrap() = true;
+        completion.notify_one();
+        assert_eq!(tokio::time::timeout(TEST_TIMEOUT, wait).await.unwrap(), IntervalEvent::Completion);
+    }
+
+    #[tokio::test]
+    async fn completion_has_priority_over_a_pending_manual_trigger() {
+        let pending = Mutex::new(true);
+        let completion = Notify::new();
+        let manual = Notify::new();
+        completion.notify_one();
+        manual.notify_one();
+
+        let event = wait_for_interval_event(&pending, &completion, &manual, LONG_WAIT).await;
+        assert_eq!(event, IntervalEvent::Completion);
+    }
+
+    #[tokio::test]
+    async fn pending_completion_does_not_require_an_unconsumed_notification() {
+        let pending = Mutex::new(true);
+        let completion = Notify::new();
+        let manual = Notify::new();
+
+        let event = tokio::time::timeout(TEST_TIMEOUT,
+            wait_for_interval_event(&pending, &completion, &manual, LONG_WAIT)).await.unwrap();
+        assert_eq!(event, IntervalEvent::Completion);
+    }
+
+    #[tokio::test]
+    async fn manual_next_still_interrupts_the_interval() {
+        let pending = Mutex::new(false);
+        let completion = Notify::new();
+        let manual = Notify::new();
+        manual.notify_one();
+
+        assert_eq!(wait_for_interval_event(&pending, &completion, &manual, LONG_WAIT).await,
+            IntervalEvent::Manual);
+    }
+
+    #[tokio::test]
+    async fn stale_completion_does_not_interrupt_an_interval_tick() {
+        let pending = Mutex::new(false);
+        let completion = Notify::new();
+        let manual = Notify::new();
+        completion.notify_one();
+
+        assert_eq!(wait_for_interval_event(&pending, &completion, &manual, Duration::ZERO).await,
+            IntervalEvent::Tick);
+    }
+
+    #[tokio::test]
+    async fn stale_notification_does_not_hide_a_restored_card() {
+        let pending = Mutex::new(true);
+        let completion = Notify::new();
+        // Completion can be handled from its flag before mark_learned sends the wakeup.
+        wait_for_completion(&pending, &completion).await;
+        *pending.lock().unwrap() = false;
+        completion.notify_one();
+
+        let wait = wait_for_completion(&pending, &completion);
+        tokio::pin!(wait);
+        tokio::select! {
+            biased;
+            _ = &mut wait => panic!("stale completion hid the restored card"),
+            _ = async {} => {}
+        }
+        *pending.lock().unwrap() = true;
+        completion.notify_one();
+        tokio::time::timeout(TEST_TIMEOUT, wait).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn consumed_completion_does_not_wake_the_next_card() {
+        let pending = Mutex::new(true);
+        let completion = Notify::new();
+        completion.notify_one();
+        wait_for_completion(&pending, &completion).await;
+        *pending.lock().unwrap() = false;
+
+        tokio::select! {
+            biased;
+            _ = wait_for_completion(&pending, &completion) => panic!("completion woke twice"),
+            _ = async {} => {}
+        }
+    }
 }

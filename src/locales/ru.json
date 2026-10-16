@@ -1,6 +1,7 @@
 {
   "app.name": "LazyWords",
   "app.subtitle": "Пассивный тренажёр карточек",
+  "shortcuts.conflict": "Недоступны горячие клавиши: {shortcuts}. Возможно, их использует другое приложение. LazyWords продолжит работу; используйте меню в трее. Закройте конфликтующее приложение и перезапустите LazyWords, чтобы включить эти клавиши.",
   "settings.title": "LazyWords — Настройки",
   "settings.tab.settings": "Настройки",
   "settings.tab.stats": "Статистика",
@@ -42,6 +43,7 @@
   "settings.learned.search": "Поиск по термину или определению…",
   "settings.behavior": "Поведение",
   "settings.autostart": "Запускать при старте Windows",
+  "settings.autostart.error": "Не удалось изменить автозапуск. Проверьте автозагрузку Windows и разрешения, затем повторите попытку.",
   "settings.hotkeys": "Горячие клавиши",
   "settings.hotkey.pause": "Пауза / продолжить",
   "settings.hotkey.next": "Следующая карточка",

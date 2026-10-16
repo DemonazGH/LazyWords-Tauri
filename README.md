@@ -10,7 +10,9 @@ LazyWords shows word flashcards as a floating overlay on top of any window. No s
 
 ## Download
 
-**[⬇ Download for Windows (.exe)](https://github.com/DemonazGH/LazyWords-Tauri/releases/latest)**
+**[Install from Microsoft Store](https://apps.microsoft.com/detail/9pntm7q8vg8s)**
+
+Alternative: [Windows EXE / MSI installers on GitHub](https://github.com/DemonazGH/LazyWords-Tauri/releases/latest).
 
 > Windows only for now. macOS / Linux planned.
 
@@ -34,7 +36,8 @@ Over days and weeks, unfamiliar words become familiar. Passively.
 |---|---|
 | 🪟 **Always on top** | Cards float over any app — browser, editor, terminal |
 | 🔇 **Zero interaction required** | Cards appear and disappear on their own |
-| 📚 **4 built-in dictionaries** | EN→RU, English definitions, irregular verbs, or import your own |
+| 📚 **Your own dictionaries** | Import CSV, JSON, or XLSX decks with any term/definition content |
+| **3 built-in starter packs** | EN→RU, English definitions, irregular verbs |
 | 🖥️ **Multi-monitor** | Card always appears on the monitor you're working on |
 | 🚫 **Fullscreen detection** | Cards are suppressed during games, videos, presentations |
 | ⚙️ **Autostart** | Launches silently with Windows |
@@ -108,10 +111,17 @@ npm run tauri build     # production .msi / .exe installer
 Run tests:
 
 ```bash
+npm test
 cd src-tauri && cargo test
 ```
 
-27 unit tests across dictionary loading, word engine, stats, i18n, and settings.
+Rust unit tests cover the dictionary engine, statistics, settings, card layout,
+completion timers, onboarding, and Windows startup integration. JavaScript
+regressions cover UI persistence, imported dictionaries, onboarding, and packaging.
+
+See [CHANGELOG.md](CHANGELOG.md) for release changes. Store MSIX and GitHub
+MSI/NSIS installers use different packaging; download the format you need rather
+than installing both copies side by side.
 
 ---
 

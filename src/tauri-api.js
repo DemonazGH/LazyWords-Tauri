@@ -4,13 +4,16 @@ const { listen } = window.__TAURI__.event;
 window.api = {
   getSettings: () => invoke('get_settings'),
   saveSettings: (patch) => invoke('save_settings', { newSettings: patch }),
+  completeOnboarding: (dictId) => invoke('complete_onboarding', { dictId }),
   getLocale: () => invoke('get_locale'),
   getDictionaries: () => invoke('get_dictionaries'),
   importDictionary: () => invoke('import_dictionary'),
   deleteDictionary: (id) => invoke('delete_dictionary', { id }),
   getStats: () => invoke('get_stats'),
   getLearnedList: () => invoke('get_learned_list'),
-  markLearned: (index) => invoke('mark_learned', { index }),
+  markLearned: (index, dictId) => invoke('mark_learned', { index, dictId }),
+  getCardLayout: () => invoke('get_card_layout'),
+  resizeCard: (height) => invoke('resize_card', { height }),
   removeLearned: (index) => invoke('remove_learned', { index }),
   clearLearned: () => invoke('clear_learned'),
 

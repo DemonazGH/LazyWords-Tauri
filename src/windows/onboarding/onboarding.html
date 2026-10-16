@@ -109,56 +109,6 @@
   </div>
 
   <script src="../../tauri-api.js"></script>
-  <script>
-    let strings = {};
-
-    // Apply locale strings
-    window.api.getLocale().then(({ strings: s }) => {
-      strings = s;
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.dataset.i18n;
-        if (s[key] !== undefined) el.textContent = s[key];
-      });
-    });
-
-    function setStatus(msg) {
-      document.getElementById('status').textContent = msg;
-    }
-
-    function disableButtons() {
-      document.querySelectorAll('.pack-btn').forEach(b => b.disabled = true);
-    }
-
-    // Starter pack buttons
-    document.querySelectorAll('.pack-btn[data-pack]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const packId = btn.dataset.pack;
-        disableButtons();
-        setStatus(strings['onboarding.loading'] ?? 'Loading…');
-        await window.api.saveSettings({ activeDictionary: packId });
-        window.close();
-      });
-    });
-
-    // Import button
-    document.getElementById('btn-import').addEventListener('click', async () => {
-      disableButtons();
-      setStatus(strings['onboarding.loading'] ?? 'Loading…');
-      const result = await window.api.importDictionary();
-      if (!result) {
-        // Cancelled — re-enable
-        document.querySelectorAll('.pack-btn').forEach(b => b.disabled = false);
-        setStatus('');
-        return;
-      }
-      if (result.error) {
-        document.querySelectorAll('.pack-btn').forEach(b => b.disabled = false);
-        setStatus('Error: ' + result.error);
-        return;
-      }
-      await window.api.saveSettings({ activeDictionary: result.id });
-      window.close();
-    });
-  </script>
+  <script src="onboarding.js"></script>
 </body>
 </html>
