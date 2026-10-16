@@ -31,5 +31,5 @@ installation. Bring your own CSV, JSON, or XLSX dictionary with `term` and
   an installation, excluding user profiles, imported decks, progress, and caches.
 - GitHub release builds run JavaScript and Rust regressions before producing
   Windows x64 MSI and NSIS installers, with SHA256 checksums.
-- Tag builds create a draft release so installer checks can finish before
+- Release builds create a draft release so installer checks can finish before
   publication. Store and GitHub builds are separate artifacts.

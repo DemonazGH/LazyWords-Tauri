@@ -190,7 +190,7 @@ contracts. `src/modules/` remains legacy Electron code, not the active backend.
 - Runs on `windows-latest`
 - Validates app/tag versions, runs JS regressions and locked release-profile Rust tests, then builds Windows x64 MSI/NSIS.
 - Retains both installers and `SHA256SUMS.txt` as a workflow artifact.
-- Tag builds create a draft GitHub release; publish only after checking the exact artifacts. The workflow does not submit anything to Microsoft Store.
+- Builds create a draft GitHub release and pin the tested version tag using the workflow token (no recursive tag build). Publish only after checking those exact artifacts. The workflow does not submit anything to Microsoft Store.
 
 ## Known Bugs
 
