@@ -4,6 +4,8 @@
 
 LazyWords shows word flashcards as a floating overlay on top of any window. No sessions, no drilling, no app switching. Just keep working — the words come to you.
 
+**[Website and sample dictionaries](https://lazywords.pages.dev/)**
+
 ![LazyWords demo](gf.gif)
 
 ---
