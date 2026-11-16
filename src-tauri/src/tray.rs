@@ -180,7 +180,10 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
             // Implicit unpause
             *state.is_paused.lock().unwrap() = false;
 
-            let entry = state.word_engine.lock().unwrap().get_random_word();
+            let (dict_id, entry) = {
+                let settings = state.settings.lock().unwrap();
+                (settings.active_dictionary.clone(), state.word_engine.lock().unwrap().get_random_word())
+            };
             if let Some(word) = entry {
                 *state.current_word.lock().unwrap() = Some(word.clone());
                 *state.is_card_visible.lock().unwrap() = true;
@@ -198,7 +201,8 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                 let _ = app.emit("show-word", serde_json::json!({
                     "term": word.entry.term,
                     "definition": word.entry.definition,
-                    "index": word.index
+                    "index": word.index,
+                    "dictId": dict_id
                 }));
                 // Signal timer to reset its interval (prevents double card)
                 state.manual_trigger.notify_one();
@@ -241,16 +245,14 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                     if let Some(words) = crate::commands::load_dictionary_by_id(app, &new_id) {
                         {
                             let mut settings = state.settings.lock().unwrap();
-                            settings.active_dictionary = new_id.clone();
-                            let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
-                            crate::settings::save_settings(&path, &settings);
-                        }
-                        {
                             let learned_indices = state.learned.lock().unwrap()
                                 .get(&new_id).cloned().unwrap_or_default();
                             let mut engine = state.word_engine.lock().unwrap();
                             engine.load_dictionary(words);
                             engine.set_learned(learned_indices);
+                            settings.active_dictionary = new_id.clone();
+                            let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
+                            crate::settings::save_settings(&path, &settings);
                         }
                         *state.all_learned.lock().unwrap() = false;
                         *state.all_dicts_done.lock().unwrap() = false;

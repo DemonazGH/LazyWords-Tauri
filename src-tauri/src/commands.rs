@@ -4,7 +4,6 @@ use std::fs;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use tauri_plugin_dialog::DialogExt;
-use tauri_plugin_autostart::ManagerExt as AutostartManagerExt;
 
 use crate::state::AppState;
 use crate::settings::Settings;
@@ -29,47 +28,78 @@ pub fn save_stats_to_disk(app: &AppHandle, stats: &crate::stats::Stats) {
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 #[tauri::command]
-pub fn get_settings(state: State<'_, AppState>) -> Settings {
-    state.settings.lock().unwrap().clone()
+pub fn get_settings(app: AppHandle, state: State<'_, AppState>) -> Settings {
+    let mut settings = state.settings.lock().unwrap().clone();
+    settings.auto_start = crate::autostart::is_enabled(&app).unwrap_or_else(|error| {
+        eprintln!("Failed to read autostart: {error}");
+        false
+    });
+    settings
 }
 
 #[tauri::command]
 pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: Value) -> bool {
+    let startup_requested = new_settings.get("autoStart").and_then(Value::as_bool);
     let mut current = state.settings.lock().unwrap();
     let old_dict = current.active_dictionary.clone();
     let old_lang = current.language.clone();
-    let old_auto_start = current.auto_start;
+    let previous = current.clone();
 
     if let Value::Object(mut current_map) = serde_json::to_value(&*current).unwrap_or(Value::Null) {
         if let Value::Object(new_map) = new_settings {
             for (k, v) in new_map {
                 current_map.insert(k, v);
             }
-            if let Ok(patched) = serde_json::from_value::<Settings>(Value::Object(current_map)) {
-                *current = patched;
+            match serde_json::from_value::<Settings>(Value::Object(current_map)) {
+                Ok(patched) => *current = patched,
+                Err(error) => {
+                    eprintln!("Invalid settings patch: {error}");
+                    return false;
+                }
             }
         }
     }
 
+    let selected_words = if current.active_dictionary != old_dict {
+        load_dictionary_by_id(&app, &current.active_dictionary)
+    } else {
+        None
+    };
+    if selected_words.as_ref().is_some_and(|words| !words.is_empty()) {
+        // Choosing through Settings after dismissing onboarding also completes setup.
+        current.first_launch = false;
+    }
+
     let app_dir = app.path().app_data_dir().unwrap().join("data");
-    crate::settings::save_settings(&app_dir.join("settings.json"), &*current);
+    let saved = crate::autostart::save_change(
+        startup_requested,
+        || crate::autostart::is_enabled(&app),
+        |enabled| crate::autostart::set_enabled(&app, enabled),
+        || crate::settings::try_save_settings(&app_dir.join("settings.json"), &current),
+    );
+    if let Err(error) = saved {
+        *current = previous;
+        eprintln!("Failed to save settings: {error}");
+        return false;
+    }
 
     let new_lang = current.language.clone();
     let new_dict = current.active_dictionary.clone();
-    let new_auto_start = current.auto_start;
     let settings_json = serde_json::to_value(&*current).unwrap_or(Value::Null);
+    if new_dict != old_dict {
+        if let Some(words) = selected_words {
+            let learned_indices = state.learned.lock().unwrap()
+                .get(&new_dict).cloned().unwrap_or_default();
+            let mut engine = state.word_engine.lock().unwrap();
+            engine.load_dictionary(words);
+            engine.set_learned(learned_indices);
+        }
+        *state.all_learned.lock().unwrap() = false;
+        *state.all_dicts_done.lock().unwrap() = false;
+    }
     drop(current);
 
     let _ = app.emit("update-settings", &settings_json);
-
-    if new_auto_start != old_auto_start {
-        let autolaunch = app.autolaunch();
-        if new_auto_start {
-            let _ = autolaunch.enable();
-        } else {
-            let _ = autolaunch.disable();
-        }
-    }
 
     if new_lang != old_lang {
         {
@@ -84,17 +114,6 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
     }
 
     if new_dict != old_dict {
-        if let Some(words) = load_dictionary_by_id(&app, &new_dict) {
-            let mut engine = state.word_engine.lock().unwrap();
-            engine.load_dictionary(words);
-            let learned_indices = state.learned.lock().unwrap()
-                .get(&new_dict).cloned().unwrap_or_default();
-            engine.set_learned(learned_indices);
-        }
-        // Clear both learned flags when dictionary changes
-        *state.all_learned.lock().unwrap() = false;
-        *state.all_dicts_done.lock().unwrap() = false;
-
         // After onboarding: dict was empty, now it has a value — show first card immediately
         if old_dict.is_empty() {
             let entry = state.word_engine.lock().unwrap().get_random_word();
@@ -108,7 +127,8 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
                 let _ = app.emit("show-word", serde_json::json!({
                     "term": word.entry.term,
                     "definition": word.entry.definition,
-                    "index": word.index
+                    "index": word.index,
+                    "dictId": new_dict
                 }));
                 // Tell timer to reset its interval — prevents it from also firing immediately
                 state.manual_trigger.notify_one();
@@ -117,6 +137,26 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
     }
 
     true
+}
+
+#[tauri::command]
+pub fn complete_onboarding(app: AppHandle, state: State<'_, AppState>, dict_id: String) -> Result<(), String> {
+    let words = load_dictionary_by_id(&app, &dict_id)
+        .ok_or_else(|| "Dictionary not found or invalid".to_string())?;
+    if dict_id.is_empty() || words.is_empty() {
+        return Err("Dictionary is empty or invalid".into());
+    }
+    if !save_settings(app.clone(), state, serde_json::json!({
+        "activeDictionary": dict_id,
+        "firstLaunch": false
+    })) {
+        return Err("Failed to save dictionary selection".into());
+    }
+    // DOM window.close() only closes the WebView on Windows, leaving a topmost shell.
+    if let Some(window) = app.get_webview_window("onboarding") {
+        window.destroy().map_err(|error| error.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -178,26 +218,22 @@ pub fn get_learned_list(state: State<'_, AppState>) -> Value {
 }
 
 #[tauri::command]
-pub fn mark_learned(app: AppHandle, state: State<'_, AppState>, index: usize) -> bool {
-    let dict_id = state.settings.lock().unwrap().active_dictionary.clone();
-
-    // Add to learned list and persist
-    {
-        let mut learned = state.learned.lock().unwrap();
-        let indices = learned.entry(dict_id.clone()).or_default();
-        if !indices.contains(&index) {
-            indices.push(index);
-        }
-        save_learned_to_disk(&app, &learned);
-    }
-
-    // Update engine learned set; check if all words are now learned
+pub fn mark_learned(app: AppHandle, state: State<'_, AppState>, index: usize, dict_id: String) -> bool {
     let all_learned_now = {
-        let learned_indices = state.learned.lock().unwrap()
-            .get(&dict_id).cloned().unwrap_or_default();
+        let settings = state.settings.lock().unwrap();
+        let mut learned = state.learned.lock().unwrap();
         let mut engine = state.word_engine.lock().unwrap();
-        engine.set_learned(learned_indices);
-        engine.get_random_word().is_none()
+        if !can_mark_learned(&settings.active_dictionary, &dict_id, index, engine.dictionary.len(),
+            learned.get(&dict_id).map(Vec::as_slice).unwrap_or_default()) {
+            return false;
+        }
+        let indices = learned.entry(dict_id.clone()).or_default();
+        indices.push(index);
+        engine.set_learned(indices.clone());
+        save_learned_to_disk(&app, &learned);
+        let all_learned = engine.get_random_word().is_none();
+        if all_learned { *state.all_learned.lock().unwrap() = true; }
+        all_learned
     };
 
     // Record learned stat and persist
@@ -211,11 +247,32 @@ pub fn mark_learned(app: AppHandle, state: State<'_, AppState>, index: usize) ->
 
     // Signal timer to handle the all-learned flow immediately
     if all_learned_now {
-        *state.all_learned.lock().unwrap() = true;
         state.all_learned_notify.notify_one();
     }
 
     true
+}
+
+fn can_mark_learned(active: &str, source: &str, index: usize, count: usize, learned: &[usize]) -> bool {
+    !source.is_empty() && active == source && index < count && !learned.contains(&index)
+}
+
+#[cfg(test)]
+mod mark_learned_tests {
+    use super::can_mark_learned;
+
+    #[test]
+    fn accepts_unlearned_index_from_active_dictionary() {
+        assert!(can_mark_learned("a", "a", 1, 2, &[0]));
+    }
+
+    #[test]
+    fn rejects_old_dictionary_invalid_index_and_duplicate() {
+        assert!(!can_mark_learned("b", "a", 0, 2, &[]));
+        assert!(!can_mark_learned("a", "a", 2, 2, &[]));
+        assert!(!can_mark_learned("a", "a", 0, 2, &[0]));
+        assert!(!can_mark_learned("", "", 0, 2, &[]));
+    }
 }
 
 #[tauri::command]
@@ -363,8 +420,15 @@ pub fn get_dictionaries(app: AppHandle, _state: State<'_, AppState>) -> Value {
 }
 
 #[tauri::command]
-pub fn import_dictionary(app: AppHandle, _state: State<'_, AppState>) -> Value {
-    if let Some(file_path) = app.dialog().file().add_filter("Dictionary", &["csv", "json", "xlsx"]).blocking_pick_file() {
+pub async fn import_dictionary(app: AppHandle, window: tauri::WebviewWindow) -> Value {
+    tauri::async_runtime::spawn_blocking(move || import_from_picker(&app, &window))
+        .await.unwrap_or_else(|error| serde_json::json!({ "error": error.to_string() }))
+}
+
+fn import_from_picker(app: &AppHandle, window: &tauri::WebviewWindow) -> Value {
+    let picker = app.dialog().file().set_parent(window)
+        .add_filter("Dictionary", &["csv", "json", "xlsx"]);
+    if let Some(file_path) = picker.blocking_pick_file() {
         let path = file_path.into_path().unwrap();
 
         let words = match crate::dictionary_loader::load_dictionary(&path) {

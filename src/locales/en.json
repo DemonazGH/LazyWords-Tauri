@@ -1,6 +1,7 @@
 {
   "app.name": "LazyWords",
   "app.subtitle": "Passive flashcard trainer",
+  "shortcuts.conflict": "Some hotkeys are unavailable: {shortcuts}. Another application may be using them. LazyWords will keep running; use the tray menu. Close the conflicting application and restart LazyWords to enable these hotkeys.",
   "settings.title": "LazyWords — Settings",
   "settings.tab.settings": "Settings",
   "settings.tab.stats": "Statistics",
@@ -42,6 +43,7 @@
   "settings.learned.search": "Search by term or definition…",
   "settings.behavior": "Behavior",
   "settings.autostart": "Start with Windows",
+  "settings.autostart.error": "Could not change startup. Check Windows Startup apps and permissions, then try again.",
   "settings.hotkeys": "Hotkeys",
   "settings.hotkey.pause": "Pause / resume",
   "settings.hotkey.next": "Next card",

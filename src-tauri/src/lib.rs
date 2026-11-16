@@ -7,10 +7,15 @@ mod commands;
 mod i18n;
 mod timer;
 mod tray;
+mod card_layout;
+mod autostart;
+
+#[cfg(all(test, windows))]
+#[path = "../windows/autostart_cleanup.rs"]
+mod autostart_cleanup_tests;
 
 use tauri::Manager;
 use tauri::Emitter;
-use tauri_plugin_autostart::ManagerExt as AutostartManagerExt;
 
 // ── Window positioning (multi-monitor aware) ──────────────────────────────────
 
@@ -43,8 +48,9 @@ pub fn reposition_window(window: &tauri::WebviewWindow, position: &str) {
 
     if let Some(monitor) = monitor {
         let scale = monitor.scale_factor();
-        let mp = monitor.position();
-        let ms = monitor.size();
+        let area = monitor.work_area();
+        let mp = &area.position;
+        let ms = &area.size;
         let screen_w = ms.width as i32;
         let screen_h = ms.height as i32;
         let origin_x = mp.x;
@@ -183,17 +189,21 @@ pub fn run() {
                 engine.set_learned(learned_indices);
             }
 
-            let first_launch = state.settings.lock().unwrap().first_launch;
-            let auto_start = state.settings.lock().unwrap().auto_start;
+            let first_launch = state.settings.lock().unwrap().needs_onboarding();
             app.manage(state);
 
-            // ── Sync autostart state with plugin ──
             {
-                let autolaunch = app.autolaunch();
-                if auto_start {
-                    let _ = autolaunch.enable();
-                } else {
-                    let _ = autolaunch.disable();
+                let state = app.state::<state::AppState>();
+                let mut settings = state.settings.lock().unwrap();
+                let before = (settings.auto_start, settings.msix_startup_initialized);
+                if let Err(error) = autostart::synchronize(app.handle(), &mut settings) {
+                    eprintln!("Failed to synchronize autostart: {error}");
+                }
+                if before != (settings.auto_start, settings.msix_startup_initialized) {
+                    let path = app.path().app_data_dir()?.join("data/settings.json");
+                    if let Err(error) = settings::try_save_settings(&path, &settings) {
+                        eprintln!("Failed to save startup migration: {error}");
+                    }
                 }
             }
 
@@ -251,15 +261,6 @@ pub fn run() {
 
             // ── Onboarding window on first launch ──
             if first_launch {
-                // Mark first_launch = false immediately so it never repeats
-                {
-                    let app_state = app.state::<crate::state::AppState>();
-                    let mut settings = app_state.settings.lock().unwrap();
-                    settings.first_launch = false;
-                    let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
-                    crate::settings::save_settings(&path, &settings);
-                }
-
                 let _ = tauri::WebviewWindowBuilder::new(
                     app,
                     "onboarding",
@@ -294,13 +295,15 @@ pub fn run() {
                 ctrl_shift_k.clone(),
             ];
 
+            let mut failed_shortcuts = Vec::new();
             for sc in shortcuts {
+                let shortcut_name = sc.to_string();
                 let w = ctrl_shift_w.clone();
                 let p = ctrl_shift_p.clone();
                 let n = ctrl_shift_n.clone();
                 let k = ctrl_shift_k.clone();
 
-                app.handle().global_shortcut().on_shortcut(sc, move |app, shortcut, event| {
+                let result = app.handle().global_shortcut().on_shortcut(sc, move |app, shortcut, event| {
                     if event.state != ShortcutState::Pressed { return; }
 
                     if shortcut == &w {
@@ -342,7 +345,10 @@ pub fn run() {
                         // Implicit unpause so timer resumes
                         *state.is_paused.lock().unwrap() = false;
 
-                        let entry = state.word_engine.lock().unwrap().get_random_word();
+                        let (dict_id, entry) = {
+                            let settings = state.settings.lock().unwrap();
+                            (settings.active_dictionary.clone(), state.word_engine.lock().unwrap().get_random_word())
+                        };
                         if let Some(word) = entry {
                             *state.current_word.lock().unwrap() = Some(word.clone());
                             *state.is_card_visible.lock().unwrap() = true;
@@ -360,7 +366,8 @@ pub fn run() {
                             let _ = app.emit("show-word", serde_json::json!({
                                 "term": word.entry.term,
                                 "definition": word.entry.definition,
-                                "index": word.index
+                                "index": word.index,
+                                "dictId": dict_id
                             }));
                             // Signal timer to reset its interval (prevents double card)
                             state.manual_trigger.notify_one();
@@ -373,7 +380,22 @@ pub fn run() {
                         }
                         let _ = app.emit("mark-known-shortcut", ());
                     }
-                }).unwrap();
+                });
+                if let Err(error) = result {
+                    eprintln!("Could not register {shortcut_name}: {error}");
+                    failed_shortcuts.push(shortcut_name);
+                }
+            }
+            if !failed_shortcuts.is_empty() {
+                use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+                let message = app.state::<state::AppState>().i18n.lock().unwrap()
+                    .t("shortcuts.conflict").replace("{shortcuts}", &failed_shortcuts.join(", "));
+                center_on_cursor_monitor(&settings_window);
+                let _ = settings_window.set_skip_taskbar(false);
+                let _ = settings_window.show();
+                let _ = settings_window.set_focus();
+                app.dialog().message(message).title("LazyWords")
+                    .parent(&settings_window).kind(MessageDialogKind::Warning).show(|_| {});
             }
 
             // Start background timer loop
@@ -384,6 +406,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::save_settings,
+            commands::complete_onboarding,
             commands::get_locale,
             commands::get_stats,
             commands::get_learned_list,
@@ -392,7 +415,9 @@ pub fn run() {
             commands::clear_learned,
             commands::get_dictionaries,
             commands::import_dictionary,
-            commands::delete_dictionary
+            commands::delete_dictionary,
+            card_layout::get_card_layout,
+            card_layout::resize_card
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

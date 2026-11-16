@@ -25,7 +25,8 @@ html, body {
   align-items: center;
   gap: 6px;
   min-width: 180px;
-  max-width: 100%;
+  width: 500px;
+  flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.5s ease;
 }
@@ -35,6 +36,9 @@ html, body {
 }
 
 #term {
+  width: 100%;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
   color: #FFFFFF;
   font-family: -apple-system, 'Segoe UI', sans-serif;
   font-size: 22px;
@@ -44,6 +48,9 @@ html, body {
 }
 
 #definition {
+  width: 100%;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
   color: #A0A0A8;
   font-family: -apple-system, 'Segoe UI', sans-serif;
   font-size: 15px;

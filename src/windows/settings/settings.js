@@ -38,6 +38,9 @@ function applyLocale(strings) {
 
 let debounceTimer = null;
 let indicatorTimer = null;
+let pendingSettingsPatch = {};
+let saveQueue = Promise.resolve();
+let settingsRevision = 0;
 
 function showSavedIndicator() {
   const tag = document.getElementById('autosave-tag');
@@ -48,18 +51,37 @@ function showSavedIndicator() {
 
 async function saveImmediate(patch) {
   Object.assign(currentSettings, patch);
-  await window.api.saveSettings(patch);
-  showSavedIndicator();
+  settingsRevision++;
+  Object.assign(pendingSettingsPatch, patch);
+  return flushPendingSettings();
 }
 
 function saveDebounced(patch) {
   Object.assign(currentSettings, patch);
+  settingsRevision++;
+  Object.assign(pendingSettingsPatch, patch);
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(async () => {
-    await window.api.saveSettings(patch);
-    showSavedIndicator();
-  }, 200);
+  debounceTimer = setTimeout(() => flushPendingSettings().catch(console.error), 200);
 }
+
+function flushPendingSettings() {
+  clearTimeout(debounceTimer);
+  const patch = pendingSettingsPatch;
+  pendingSettingsPatch = {};
+  if (Object.keys(patch).length === 0) return saveQueue;
+  // Serialize writes so an older request cannot overwrite a newer slider value.
+  saveQueue = saveQueue.catch(() => {}).then(async () => {
+    clearTimeout(indicatorTimer);
+    document.getElementById('autosave-tag').classList.remove('visible');
+    const saved = await window.api.saveSettings(patch);
+    if (saved === false) return false;
+    showSavedIndicator();
+    return true;
+  });
+  return saveQueue;
+}
+
+window.addEventListener('blur', () => flushPendingSettings().catch(console.error));
 
 // ── Tab switching ──────────────────────────────────────────
 
@@ -80,7 +102,7 @@ document.getElementById('language').addEventListener('change', async (e) => {
   // Manually fetch and apply new language strings instantly
   const localeData = await window.api.getLocale();
   applyLocale(localeData.strings);
-  loadDictionaries(currentSettings.activeDictionary);
+  loadDictionaries();
 });
 
 // ── Position buttons ───────────────────────────────────────
@@ -118,16 +140,43 @@ bindRange('fadeDuration', 'fadeDuration', 1);
 
 // ── Checkbox ───────────────────────────────────────────────
 
-document.getElementById('autoStart').addEventListener('change', (e) => {
-  saveImmediate({ autoStart: e.target.checked });
+document.getElementById('autoStart').addEventListener('change', async (e) => {
+  const checkbox = e.target;
+  const error = document.getElementById('autostart-error');
+  checkbox.disabled = true;
+  error.hidden = true;
+  try {
+    if (await saveImmediate({ autoStart: checkbox.checked }) === false) {
+      throw new Error('Autostart change was not saved');
+    }
+  } catch (failure) {
+    console.error(failure);
+    try {
+      const settings = await window.api.getSettings();
+      currentSettings.autoStart = settings.autoStart;
+      checkbox.checked = settings.autoStart;
+    } catch (refreshError) {
+      console.error(refreshError);
+    }
+    error.textContent = L['settings.autostart.error'] ??
+      'Could not change startup. Check Windows Startup apps and permissions, then try again.';
+    error.hidden = false;
+  } finally {
+    checkbox.disabled = false;
+  }
 });
 
 // ── Dictionary selector ────────────────────────────────────
 
 let availableDicts = [];
+let dictionaryListRequest = 0;
 
-async function loadDictionaries(selectedId) {
-  availableDicts = await window.api.getDictionaries();
+async function loadDictionaries() {
+  const request = ++dictionaryListRequest;
+  const dictionaries = await window.api.getDictionaries();
+  if (request !== dictionaryListRequest) return;
+  availableDicts = dictionaries;
+  const selectedId = currentSettings.activeDictionary;
   const sel = document.getElementById('activeDictionary');
   sel.innerHTML = '';
   const importLabel = L['settings.import.label'] ?? 'import';
@@ -148,8 +197,8 @@ function updateDeleteBtn() {
     (dict && dict.source === 'user') ? '' : 'none';
 }
 
-document.getElementById('activeDictionary').addEventListener('change', (e) => {
-  saveImmediate({ activeDictionary: e.target.value });
+document.getElementById('activeDictionary').addEventListener('change', async (e) => {
+  await saveImmediate({ activeDictionary: e.target.value });
   updateDeleteBtn();
   loadLearnedList();
 });
@@ -171,7 +220,8 @@ document.getElementById('btn-delete-dict').addEventListener('click', async () =>
     return;
   }
   currentSettings.activeDictionary = result.newActive;
-  await loadDictionaries(result.newActive);
+  settingsRevision++;
+  await loadDictionaries();
   await loadLearnedList();
 });
 
@@ -194,9 +244,9 @@ document.getElementById('btn-import').addEventListener('click', async () => {
     msg.classList.add('ok');
     msg.textContent = (L['settings.import.success'] ?? 'Imported: {n} words')
       .replace('{n}', result.wordCount);
-    await loadDictionaries(result.id);
-    saveImmediate({ activeDictionary: result.id });
-    document.getElementById('activeDictionary').value = result.id;
+    await saveImmediate({ activeDictionary: result.id });
+    await loadDictionaries();
+    await loadLearnedList();
   }
 
   setTimeout(() => msg.classList.remove('visible'), 4000);
@@ -209,9 +259,12 @@ let allLearnedWords = []; // newest first
 let learnedShowAll = false;
 let restoreAllConfirming = false;
 let restoreAllTimer = null;
+let learnedListRequest = 0;
 
 async function loadLearnedList() {
-  const { words } = await window.api.getLearnedList();
+  const request = ++learnedListRequest;
+  const { dictId, words } = await window.api.getLearnedList();
+  if (request !== learnedListRequest || dictId !== currentSettings.activeDictionary) return;
   allLearnedWords = [...words].reverse(); // newest first
   renderLearnedList();
 }
@@ -412,7 +465,7 @@ async function init() {
 
   document.getElementById('autoStart').checked = currentSettings.autoStart ?? true;
 
-  await loadDictionaries(currentSettings.activeDictionary);
+  await loadDictionaries();
   await loadLearnedList();
 
   // Real-time stats updates pushed from main process
@@ -425,7 +478,8 @@ async function init() {
   // Auto-switch: main process switched activeDictionary — refresh UI
   window.api.onDictAutoSwitched(({ newId }) => {
     currentSettings.activeDictionary = newId;
-    loadDictionaries(newId);
+    settingsRevision++;
+    loadDictionaries();
     loadLearnedList();
   });
 
@@ -433,24 +487,25 @@ async function init() {
   window.api.onLocaleUpdated(({ strings }) => {
     applyLocale(strings);
     // Refresh dictionary list to update "(import)" label in current locale
-    loadDictionaries(currentSettings.activeDictionary);
+    loadDictionaries();
   });
 
   // Dict list changed (e.g. import from onboarding) — reload dropdown
-  window.api.onDictListUpdated(async () => {
-    const settings = await window.api.getSettings();
-    currentSettings = settings;
-    await loadDictionaries(settings.activeDictionary);
-    await loadLearnedList();
-  });
+  window.api.onDictListUpdated(refreshSettingsData);
 
   // Fallback: refresh data every time the settings window receives focus
-  window.addEventListener('focus', async () => {
-    const settings = await window.api.getSettings();
-    currentSettings = settings;
-    await loadDictionaries(settings.activeDictionary);
-    await loadLearnedList();
-  });
+  window.addEventListener('focus', refreshSettingsData);
+}
+
+async function refreshSettingsData() {
+  const revision = settingsRevision;
+  await saveQueue.catch(() => {});
+  const settings = await window.api.getSettings();
+  if (revision !== settingsRevision) return;
+  currentSettings = { ...settings, ...pendingSettingsPatch };
+  document.getElementById('autoStart').checked = currentSettings.autoStart ?? true;
+  await loadDictionaries();
+  await loadLearnedList();
 }
 
 init();

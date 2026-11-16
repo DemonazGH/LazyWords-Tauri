@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <!-- This hidden feature links the actions without adding installed components. -->
+    <Feature Id="OwnedAutostartCleanup" Level="1" Display="hidden"
+             AllowAdvertise="no" Absent="disallow" />
+
+    <Binary Id="OwnedAutostartCleanupDll" SourceFile="$(var.SourceDir).autostart.dll" />
+    <CustomAction Id="CleanupOwnedAutostart" BinaryKey="OwnedAutostartCleanupDll"
+                  DllEntry="CleanupOwnedAutostart" Execute="commit"
+                  Impersonate="yes" Return="ignore" HideTarget="yes" />
+    <SetProperty Id="CleanupOwnedAutostart" Value="[UserSID]|[#Path]|[ProductName]"
+                 Before="CleanupOwnedAutostart" Sequence="execute">
+      <![CDATA[Installed AND REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE]]>
+    </SetProperty>
+    <InstallExecuteSequence>
+      <Custom Action="CleanupOwnedAutostart" Before="RemoveFiles">
+        <![CDATA[Installed AND REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE]]>
+      </Custom>
+    </InstallExecuteSequence>
+  </Fragment>
+</Wix>

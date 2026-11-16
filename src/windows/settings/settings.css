@@ -368,6 +368,8 @@ code {
   margin-top: 6px;
 }
 
+#autostart-error { color: #f87171; }
+
 /* ── Stats ───────────────────────────────────────────────── */
 
 .stats-grid {
