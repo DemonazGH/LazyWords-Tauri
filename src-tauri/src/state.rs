@@ -1,8 +1,9 @@
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
-use crate::settings::{Settings, load_settings};
+use crate::settings::Settings;
 use crate::stats::{StatsTracker, load_stats};
 use crate::word_engine::{WordEngine, WordWithIndex};
 
@@ -27,13 +28,10 @@ pub struct AppState {
     pub tray: Mutex<Option<tauri::tray::TrayIcon>>,
 }
 
-pub fn init_state(app: &AppHandle) -> AppState {
-    let app_dir = app.path().app_data_dir().unwrap().join("data");
-    let settings_path = app_dir.join("settings.json");
+pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> AppState {
     let stats_path = app_dir.join("stats.json");
     let learned_path = app_dir.join("learned.json");
 
-    let settings = load_settings(&settings_path);
     let stats = load_stats(&stats_path);
     
     let learned: HashMap<String, Vec<usize>> = if learned_path.exists() {
@@ -48,14 +46,7 @@ pub fn init_state(app: &AppHandle) -> AppState {
 
     let engine = WordEngine::new();
     
-    let mut locales_dir = app.path().resolve("locales", tauri::path::BaseDirectory::Resource).unwrap_or_default();
-    if !locales_dir.exists() {
-        let mut p = std::env::current_dir().unwrap();
-        p.push("../src/locales");
-        locales_dir = p;
-    }
-    let mut i18n = crate::i18n::I18n::new(locales_dir);
-    i18n.set_locale(&settings.language);
+    let i18n = crate::i18n::I18n::for_app(app, &settings.language);
     
     AppState {
         settings: Mutex::new(settings),

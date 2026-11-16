@@ -194,13 +194,18 @@ contracts. `src/modules/` remains legacy Electron code, not the active backend.
 
 ## Known Bugs
 
-No currently reproduced open application bug is recorded for the R3 source.
+No other currently reproduced open application bug is recorded.
 This is not a claim of exhaustive platform coverage. A missing-WebView2 fault
 injection is not proof of a clean machine without the runtime; previous installer
 tests do not certify a newly rebuilt package. Review exact artifacts before release.
 
 ## Fixed Bugs
 
+- Unreadable settings no longer get replaced with defaults at startup. A missing
+  file still means first launch; read or parse failures show a recovery message
+  and exit before onboarding or autostart can change the profile. Saves flush a
+  complete temporary file before replacing `settings.json`. New settings fields
+  need an explicit deserialization default and an old-profile regression test.
 - Startup shortcut conflicts no longer abort the app.
 - Long cards wrap and resize within the current monitor's work area.
 - Imported selection rejects stale responses; autosave merges and serializes changes.
