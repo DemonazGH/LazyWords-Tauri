@@ -1,6 +1,7 @@
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
+use tauri::{AppHandle, Manager};
 
 pub struct I18n {
     strings: Value,
@@ -9,6 +10,15 @@ pub struct I18n {
 }
 
 impl I18n {
+    pub fn for_app(app: &AppHandle, language: &str) -> Self {
+        let locales_dir = app.path().resolve("locales", tauri::path::BaseDirectory::Resource)
+            .ok().filter(|dir| dir.is_dir())
+            .unwrap_or_else(|| PathBuf::from("../src/locales"));
+        let mut i18n = Self::new(locales_dir);
+        i18n.set_locale(language);
+        i18n
+    }
+
     pub fn new(locales_dir: PathBuf) -> Self {
         let mut i18n = Self {
             strings: serde_json::json!({}),

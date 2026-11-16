@@ -159,7 +159,29 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
-            let state = state::init_state(&app.handle());
+            let data_dir = app.path().app_data_dir()?.join("data");
+            let settings_path = data_dir.join("settings.json");
+            let settings = match settings::load_settings(&settings_path) {
+                Ok(settings) => settings,
+                Err(error) => {
+                    use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+                    eprintln!("Could not read settings ({}): {error}", settings_path.display());
+                    let handle = app.handle().clone();
+                    let i18n = i18n::I18n::for_app(&handle, "auto");
+                    let key = "settings.loadError";
+                    let translation = i18n.t(key);
+                    let message = if translation == key {
+                        "LazyWords could not read your settings. No data was changed. Check the file permissions or restore a backup before restarting.\n\n{path}"
+                    } else {
+                        translation
+                    }.replace("{path}", &settings_path.to_string_lossy());
+                    app.dialog().message(message).title("LazyWords")
+                        .kind(MessageDialogKind::Error).show(move |_| handle.exit(1));
+                    // Do not initialize onboarding, autostart, or any profile writers.
+                    return Ok(());
+                }
+            };
+            let state = state::init_state(app.handle(), &data_dir, settings);
 
             // Load active dictionary + apply persisted learned indices.
             // If the saved dict ID can't be found (e.g. renamed file), fall back to the

@@ -2,6 +2,7 @@
   "app.name": "LazyWords",
   "app.subtitle": "Passive flashcard trainer",
   "shortcuts.conflict": "Some hotkeys are unavailable: {shortcuts}. Another application may be using them. LazyWords will keep running; use the tray menu. Close the conflicting application and restart LazyWords to enable these hotkeys.",
+  "settings.loadError": "LazyWords could not read your settings and will close without changing your data. Check the file permissions or restore a backup before restarting.\n\n{path}",
   "settings.title": "LazyWords — Settings",
   "settings.tab.settings": "Settings",
   "settings.tab.stats": "Statistics",

@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::{self, Write};
 use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+// New fields need an explicit deserialization default for existing profiles.
 pub struct Settings {
     pub position: String,
     pub font_size: f32,
@@ -42,17 +44,13 @@ impl Settings {
     }
 }
 
-pub fn load_settings(path: &Path) -> Settings {
-    if path.exists() {
-        if let Ok(data) = fs::read_to_string(path) {
-            if let Ok(settings) = serde_json::from_str::<Settings>(&data) {
-                return settings;
-            }
-        }
+pub fn load_settings(path: &Path) -> io::Result<Settings> {
+    match fs::read(path) {
+        Ok(data) => serde_json::from_slice(&data)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Settings::default()),
+        Err(error) => Err(error),
     }
-    let default = Settings::default();
-    save_settings(path, &default);
-    default
 }
 
 pub fn save_settings(path: &Path, settings: &Settings) {
@@ -62,11 +60,16 @@ pub fn save_settings(path: &Path, settings: &Settings) {
 }
 
 pub fn try_save_settings(path: &Path, settings: &Settings) -> Result<(), String> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-    }
-    let data = serde_json::to_string_pretty(settings).map_err(|error| error.to_string())?;
-    fs::write(path, data).map_err(|error| error.to_string())
+    let parent = path.parent().filter(|dir| !dir.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    let data = serde_json::to_vec_pretty(settings).map_err(|error| error.to_string())?;
+    // Replace the destination only after a complete write in the same directory.
+    let mut temp = tempfile::NamedTempFile::new_in(parent).map_err(|error| error.to_string())?;
+    temp.write_all(&data).map_err(|error| error.to_string())?;
+    temp.as_file().sync_all().map_err(|error| error.to_string())?;
+    temp.persist(path).map_err(|error| error.error.to_string())?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -145,7 +148,95 @@ mod tests {
     }
 
     #[test]
-    fn settings_write_failure_is_reported() {
-        assert!(try_save_settings(Path::new("."), &Settings::default()).is_err());
+    fn missing_settings_use_first_launch_defaults_without_writing() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("data/settings.json");
+        let settings = load_settings(&path).unwrap();
+        assert!(settings.needs_onboarding());
+        assert!(!path.parent().unwrap().exists());
+    }
+
+    #[test]
+    fn existing_profile_keeps_preferences_and_does_not_restart_onboarding() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let mut profile = serde_json::json!({
+            "position": "bottom-right", "fontSize": 28.0, "showDuration": 9.0,
+            "interval": 6.0, "fadeDuration": 0.75, "activeDictionary": "my-deck",
+            "autoStart": false, "firstLaunch": false, "language": "ru",
+            "msixStartupInitialized": true
+        });
+        for startup_initialized in [true, false] {
+            if !startup_initialized {
+                profile.as_object_mut().unwrap().remove("msixStartupInitialized");
+            }
+            let original = serde_json::to_vec(&profile).unwrap();
+            fs::write(&path, &original).unwrap();
+            let settings = load_settings(&path).unwrap();
+            assert!(!settings.needs_onboarding());
+            assert_eq!(settings.msix_startup_initialized, startup_initialized);
+            let mut restored = serde_json::to_value(settings).unwrap();
+            if !startup_initialized {
+                restored.as_object_mut().unwrap().remove("msixStartupInitialized");
+            }
+            assert_eq!(restored, profile);
+            assert_eq!(fs::read(&path).unwrap(), original);
+        }
+    }
+
+    #[test]
+    fn invalid_settings_are_not_replaced() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let mut wrong_type = serde_json::to_value(Settings::default()).unwrap();
+        wrong_type["fontSize"] = serde_json::json!("not a number");
+        for original in [b"{\"firstLaunch\":".to_vec(), vec![0xff], serde_json::to_vec(&wrong_type).unwrap()] {
+            fs::write(&path, &original).unwrap();
+            assert_eq!(load_settings(&path).unwrap_err().kind(), io::ErrorKind::InvalidData);
+            assert_eq!(fs::read(&path).unwrap(), original);
+        }
+    }
+
+    #[test]
+    fn unreadable_settings_are_not_treated_as_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        fs::create_dir(&path).unwrap();
+        assert!(load_settings(&path).is_err());
+        assert!(try_save_settings(&path, &Settings::default()).is_err());
+        assert!(path.is_dir());
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn saves_can_create_and_replace_a_complete_settings_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let mut settings = Settings::default();
+        try_save_settings(&path, &settings).unwrap();
+        assert_eq!(load_settings(&path).unwrap().font_size, 22.0);
+        settings.font_size = 30.0;
+        try_save_settings(&path, &settings).unwrap();
+        assert_eq!(load_settings(&path).unwrap().font_size, 30.0);
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn blocked_replacement_keeps_the_existing_settings_bytes() {
+        use std::os::windows::fs::OpenOptionsExt;
+        use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_WRITE};
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let mut settings = Settings::default();
+        try_save_settings(&path, &settings).unwrap();
+        let original = fs::read(&path).unwrap();
+        let _lock = fs::OpenOptions::new().read(true)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE).open(&path).unwrap();
+        settings.font_size = 30.0;
+        assert!(try_save_settings(&path, &settings).is_err());
+        assert_eq!(fs::read(&path).unwrap(), original);
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
     }
 }
