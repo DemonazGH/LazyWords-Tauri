@@ -75,7 +75,7 @@ pub fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let active_dict = app.state::<AppState>().settings.lock().unwrap().active_dictionary.clone();
 
     // Collect translated strings while holding the lock, then drop it before building the menu.
-    let (lbl_pause, lbl_resume, lbl_next, lbl_dict, lbl_settings, lbl_quit) = {
+    let (lbl_pause, lbl_resume, lbl_next, lbl_dict, lbl_settings, lbl_quick_add, lbl_quit) = {
         let app_state = app.state::<AppState>();
         let i18n = app_state.i18n.lock().unwrap();
         (
@@ -84,6 +84,7 @@ pub fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             format!("⏭ {}", i18n.t("tray.next")),
             i18n.t("tray.dictionary").to_string(),
             format!("⚙ {}", i18n.t("tray.settings")),
+            i18n.t("quickAdd.title").to_string(),
             format!("✕ {}", i18n.t("tray.quit")),
         )
     };
@@ -101,6 +102,10 @@ pub fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
 
     let next = MenuItem::with_id(app, "next", &lbl_next, true, None::<&str>)?;
     menu.append(&next)?;
+    let quick_add = MenuItem::with_id(
+        app, "quick-add", lbl_quick_add, app.get_webview_window("quick-add").is_some(), None::<&str>,
+    )?;
+    menu.append(&quick_add)?;
 
     menu.append(&PredefinedMenuItem::separator(app)?)?;
 
@@ -108,16 +113,17 @@ pub fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let dict_label = if active_dict.is_empty() {
         format!("📚 {}", lbl_dict)
     } else {
-        format!("📚 {} — {}", lbl_dict, active_dict.replace('_', " ").to_uppercase())
+        format!("📚 {} — {}", lbl_dict, crate::commands::dictionary_display_name(app, &active_dict))
     };
     let dict_submenu = Submenu::new(app, &dict_label, true)?;
 
     let all_dicts = crate::commands::get_all_dict_ids(app);
     for id in &all_dicts {
+        let name = crate::commands::dictionary_display_name(app, id);
         let label = if *id == active_dict {
-            format!("✓ {}", id.replace('_', " ").to_uppercase())
+            format!("✓ {name}")
         } else {
-            format!("  {}", id.replace('_', " ").to_uppercase())
+            format!("  {name}")
         };
         let item = MenuItem::with_id(app, format!("dict:{}", id), label, true, None::<&str>)?;
         dict_submenu.append(&item)?;
@@ -202,6 +208,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
             }
             refresh_tray(app);
         }
+        "quick-add" => crate::quick_add::open(app),
         "settings" => {
             if let Some(window) = app.get_webview_window("settings") {
                 crate::center_on_cursor_monitor(&window);

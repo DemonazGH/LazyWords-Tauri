@@ -200,7 +200,7 @@ async function loadDictionaries() {
   for (const d of availableDicts) {
     const opt = document.createElement('option');
     opt.value = d.id;
-    opt.textContent = d.source === 'bundled' ? d.name : `${d.name} (${importLabel})`;
+    opt.textContent = d.source === 'user' ? `${d.name} (${importLabel})` : d.name;
     if (d.id === selectedId) opt.selected = true;
     sel.appendChild(opt);
   }

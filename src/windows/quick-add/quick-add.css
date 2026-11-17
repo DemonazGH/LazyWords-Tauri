@@ -1,0 +1,48 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: #f4f4f5;
+  background: #18181b;
+  font: 14px 'Segoe UI', sans-serif;
+  color-scheme: dark;
+}
+
+main { padding: 20px 24px; }
+h1 { margin: 0; font-size: 21px; }
+.intro { margin: 6px 0 16px; color: #b4b4bf; }
+form { display: grid; gap: 8px; }
+label { font-weight: 600; }
+input, textarea, button { font: inherit; }
+
+input, textarea, button {
+  border: 1px solid #44444e;
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: inherit;
+  background: #27272a;
+}
+
+textarea { resize: vertical; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .65; }
+:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+
+.suggestion {
+  padding: 8px 10px;
+  border-left: 3px solid #818cf8;
+  background: #222229;
+}
+
+.suggestion p {
+  margin: 0 0 6px;
+  max-height: 3.5em;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#quick-add-status { margin: 0; color: #fda4af; }
+#quick-add-status:empty { display: none; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+#quick-add-save { background: #4338ca; border-color: #818cf8; font-weight: 600; }

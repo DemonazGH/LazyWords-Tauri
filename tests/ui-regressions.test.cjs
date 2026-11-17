@@ -20,6 +20,7 @@ function renderer(file, api = {}) {
       },
       addEventListener(name, cb) { this.listeners[name] = cb; },
       setAttribute(name, value) { this.attributes[name] = value; },
+      focus() { this.focused = true; },
       appendChild(child) { this.children.push(child); if (child.selected) this.value = child.value; },
       set innerHTML(value) { this.children = []; this.value = ''; },
       getBoundingClientRect: () => ({ width: 500, height: 360 }),
@@ -49,6 +50,83 @@ function renderer(file, api = {}) {
     },
   };
 }
+
+test('Quick Add prefills a term without saving and only offers an exact suggestion', async () => {
+  let draft = { term: 'One', suggestion: 'A number' };
+  let opens;
+  let closes = 0;
+  const app = renderer('src/windows/quick-add/quick-add.js', {
+    onQuickAddOpened: cb => { opens = cb; },
+    onLocaleUpdated: () => {},
+    getLocale: async () => ({ strings: {} }),
+    takeQuickAddDraft: async () => { const next = draft; draft = null; return next; },
+    closeQuickAdd: async () => { closes++; },
+    saveQuickCard: () => assert.fail('Opening, suggesting and cancelling must never save'),
+  });
+  await app.run('init()');
+  const input = app.elements.get('quick-add-term');
+  const definition = app.elements.get('quick-add-definition');
+  const suggestion = app.elements.get('quick-add-suggestion');
+  assert.equal(input.value, 'One');
+  assert.equal(definition.value, '');
+  assert.equal(definition.focused, true);
+  assert.equal(suggestion.hidden, false);
+  input.value = 'Another';
+  input.listeners.input();
+  assert.equal(suggestion.hidden, true);
+  input.value = ' one ';
+  input.listeners.input();
+  app.elements.get('quick-add-use').listeners.click();
+  assert.equal(definition.value, 'A number');
+  await opens();
+  assert.equal(definition.value, 'A number', 'a duplicate open event keeps the draft');
+  await app.elements.get('quick-add-form').listeners.keydown({ key: 'Escape', preventDefault() {} });
+  assert.equal(closes, 1);
+  assert.equal(definition.value, '');
+  draft = { term: '', suggestion: null };
+  await opens();
+  assert.equal(input.value, '');
+  assert.equal(input.focused, true);
+});
+
+test('Quick Add serializes saves, retains rejected drafts and closes on success', async () => {
+  const saves = [];
+  let finish;
+  let closes = 0;
+  const app = renderer('src/windows/quick-add/quick-add.js', {
+    saveQuickCard: (term, definition) => {
+      saves.push([term, definition]);
+      return new Promise((resolve, reject) => { finish = { resolve, reject }; });
+    },
+    closeQuickAdd: async () => { closes++; },
+  });
+  const term = app.elements.get('quick-add-term');
+  const definition = app.elements.get('quick-add-definition');
+  const message = app.elements.get('quick-add-status');
+  const submit = () => app.elements.get('quick-add-form').listeners.submit({ preventDefault() {} });
+  term.value = '  term  ';
+  definition.value = '   ';
+  await submit();
+  assert.equal(saves.length, 0);
+  definition.value = '  definition  ';
+  const first = submit();
+  await submit();
+  assert.deepEqual(saves, [['term', 'definition']]);
+  finish.reject('quickAdd.duplicate');
+  await first;
+  assert.match(message.textContent, /already in My Words/);
+  assert.equal(definition.value, '  definition  ');
+  assert.equal(closes, 0);
+
+  definition.value = ' another definition ';
+  const second = submit();
+  finish.resolve();
+  await second;
+  assert.equal(closes, 1);
+  assert.deepEqual(saves[1], ['term', 'another definition']);
+  assert.equal(term.value, '');
+  assert.equal(definition.value, '');
+});
 
 test('debounce preserves patches from different sliders', async () => {
   const saved = {};
