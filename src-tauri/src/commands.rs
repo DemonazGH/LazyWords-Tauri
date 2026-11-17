@@ -118,18 +118,11 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
         if old_dict.is_empty() {
             let entry = state.word_engine.lock().unwrap().get_random_word();
             if let Some(word) = entry {
-                *state.current_word.lock().unwrap() = Some(word.clone());
-                *state.is_card_visible.lock().unwrap() = true;
                 if let Some(window) = app.get_webview_window("main") {
                     let pos = state.settings.lock().unwrap().position.clone();
                     crate::reposition_window(&window, &pos);
                 }
-                let _ = app.emit("show-word", serde_json::json!({
-                    "term": word.entry.term,
-                    "definition": word.entry.definition,
-                    "index": word.index,
-                    "dictId": new_dict
-                }));
+                crate::timer::emit_word(&app, &word, &new_dict);
                 // Tell timer to reset its interval — prevents it from also firing immediately
                 state.manual_trigger.notify_one();
             }

@@ -18,7 +18,6 @@ window.api = {
   clearLearned: () => invoke('clear_learned'),
 
   onShowWord: (cb) => listen('show-word', (e) => cb(e.payload)),
-  onHideWord: (cb) => listen('hide-word', () => cb()),
   onMarkKnown: (cb) => listen('mark-known-shortcut', () => cb()),
   onUpdateSettings: (cb) => listen('update-settings', (e) => cb(e.payload)),
   onAllLearned: (cb) => listen('show-all-learned', (e) => cb(e.payload)),

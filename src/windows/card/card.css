@@ -57,3 +57,7 @@ html, body {
   font-weight: 400;
   text-align: center;
 }
+
+#definition.answer-pending {
+  visibility: hidden;
+}

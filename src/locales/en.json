@@ -21,6 +21,8 @@
   "settings.fontSize.unit": "px",
   "settings.showDuration": "Show duration",
   "settings.showDuration.unit": "sec",
+  "settings.answerDelay": "Answer delay",
+  "settings.answerDelay.off": "Off",
   "settings.interval": "Interval",
   "settings.interval.unit": "min",
   "settings.fadeDuration": "Fade animation",

@@ -10,6 +10,8 @@ pub struct Settings {
     pub position: String,
     pub font_size: f32,
     pub show_duration: f32,
+    #[serde(default, deserialize_with = "deserialize_answer_delay")]
+    pub answer_delay: u8,
     pub interval: f32,
     pub fade_duration: f32,
     pub active_dictionary: String,
@@ -26,6 +28,7 @@ impl Default for Settings {
             position: "center".to_string(),
             font_size: 22.0,
             show_duration: 4.0,
+            answer_delay: 0,
             interval: 3.0,
             fade_duration: 0.5,
             active_dictionary: String::new(),
@@ -35,6 +38,10 @@ impl Default for Settings {
             language: "auto".to_string(),
         }
     }
+}
+
+fn deserialize_answer_delay<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<u8, D::Error> {
+    u8::deserialize(deserializer).map(|seconds| seconds.min(5))
 }
 
 impl Settings {
@@ -82,6 +89,7 @@ mod tests {
         assert_eq!(s.interval, 3.0);
         assert_eq!(s.font_size, 22.0);
         assert_eq!(s.show_duration, 4.0);
+        assert_eq!(s.answer_delay, 0);
         assert_eq!(s.active_dictionary, "");
         assert_eq!(s.position, "center");
         assert_eq!(s.language, "auto");
@@ -115,6 +123,29 @@ mod tests {
         settings.msix_startup_initialized = true;
         let restored: Settings = serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
         assert!(restored.msix_startup_initialized);
+    }
+
+    #[test]
+    fn old_profiles_default_answer_delay_to_off_and_keep_onboarding_complete() {
+        let mut settings = Settings::default();
+        settings.active_dictionary = "en-ru".into();
+        settings.first_launch = false;
+        let mut json = serde_json::to_value(&settings).unwrap();
+        json.as_object_mut().unwrap().remove("answerDelay");
+        let restored: Settings = serde_json::from_value(json).unwrap();
+        assert_eq!(restored.answer_delay, 0);
+        assert_eq!(restored.active_dictionary, settings.active_dictionary);
+        assert!(!restored.needs_onboarding());
+    }
+
+    #[test]
+    fn answer_delay_is_persisted_and_bounded() {
+        let mut json = serde_json::to_value(Settings::default()).unwrap();
+        json["answerDelay"] = serde_json::json!(3);
+        let settings: Settings = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(serde_json::to_value(settings).unwrap()["answerDelay"], 3);
+        json["answerDelay"] = serde_json::json!(12);
+        assert_eq!(serde_json::from_value::<Settings>(json).unwrap().answer_delay, 5);
     }
 
     #[test]
@@ -176,6 +207,7 @@ mod tests {
             assert!(!settings.needs_onboarding());
             assert_eq!(settings.msix_startup_initialized, startup_initialized);
             let mut restored = serde_json::to_value(settings).unwrap();
+            assert_eq!(restored.as_object_mut().unwrap().remove("answerDelay"), Some(0.into()));
             if !startup_initialized {
                 restored.as_object_mut().unwrap().remove("msixStartupInitialized");
             }

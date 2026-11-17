@@ -54,13 +54,13 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 ### Backend (src-tauri/src/)
 
 **AppState** (`state.rs`) is the central Mutex-protected state shared across all Rust modules:
-- `settings` – user config (intervals, font size, position, language, autostart, first_launch)
+- `settings` – user config (intervals, answer delay, font size, position, language, autostart, first_launch)
 - `word_engine` – holds loaded dictionary + `HashSet<usize>` of learned card indices
 - `stats_tracker` – daily/streak statistics
 - `learned` – `HashMap<dict_name, Vec<usize>>` persisted across sessions
-- `is_paused`, `is_card_visible`, `current_word`, `all_learned`, `all_dicts_done` – runtime state
+- `is_paused`, `all_learned`, `all_dicts_done` – runtime state
 - `all_learned_notify` – wakes card-duration and interval waits when completion becomes pending
-- `manual_trigger` – wakes timer interval when `Ctrl+Shift+N` / tray "Next" shows a card manually
+- `manual_trigger` – interrupts timer pacing when `Ctrl+Shift+N` / tray "Next" shows a card manually
 - `tray` – `Option<TrayIcon>` handle for updating icon and menu from anywhere
 
 **Timer loop** (`timer.rs`) — the core async loop:
@@ -110,7 +110,7 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 
 **`src/tauri-api.js`** — IPC bridge (`window.api`). Key entries: `markLearned(index)`, `onMarkKnown(cb)`.
 
-**`src/windows/card/card.js`** — tracks `currentWordIndex` and `isCardVisible` from `show-word`/`hide-word` events; `onMarkKnown` listener guards with `isCardVisible && currentWordIndex !== null` before calling `markLearned`. Card elements use IDs `#term` and `#definition`.
+**`src/windows/card/card.js`** — owns card visibility and cancels both reveal and hide timers on replacement, dictionary change, or mark-known. Hidden answers retain their layout space. Mark-known still requires a visible, learnable card.
 
 **`src/windows/settings/settings.js`** — handles `onStatsUpdated`, `onDictAutoSwitched`, `onLocaleUpdated`.
 
@@ -133,7 +133,8 @@ All data written to OS AppData directory via `tauri::path`:
 - `withGlobalTauri: true` in `tauri.conf.json` — Tauri API available as `window.__TAURI__` without a bundler.
 - No frontend build step — raw HTML/CSS/JS served directly (`frontendDist: "../src"`).
 - CSP disabled (`"csp": null`).
-- `show-word` includes the source dictionary ID with term/definition/index; mark-known passes the source back for backend validation.
+- `show-word` includes the source dictionary ID with term/definition/index and a timing snapshot. Rust paces scheduling for answer delay plus show duration; only the renderer hides cards. Status cards are never delayed.
+- Answer delay is Off by default for new and existing profiles, or 1–5 seconds when enabled. Show duration is the time after the answer appears. Timing changes apply to the next card.
 - Default `active_dictionary` is `""` (empty) — timer sleeps until a dictionary is chosen.
 - Completion wakes the timer immediately, including when the last card was shown manually.
 - Use an isolated, backed-up profile for onboarding tests; never delete a real user's settings/progress to prepare QA.

@@ -21,6 +21,8 @@
   "settings.fontSize.unit": "px",
   "settings.showDuration": "Время показа",
   "settings.showDuration.unit": "сек",
+  "settings.answerDelay": "Задержка ответа",
+  "settings.answerDelay.off": "Выкл.",
   "settings.interval": "Интервал",
   "settings.interval.unit": "мин",
   "settings.fadeDuration": "Анимация появления",

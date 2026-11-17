@@ -1,6 +1,7 @@
 use tauri::{AppHandle, Manager};
 use std::time::Duration;
 use crate::state::AppState;
+use crate::word_engine::WordWithIndex;
 use tauri::Emitter;
 use std::sync::Mutex;
 use tokio::sync::Notify;
@@ -85,6 +86,24 @@ fn t(app: &AppHandle, key: &'static str) -> String {
     i18n.t(key).to_string()
 }
 
+pub fn emit_word(app: &AppHandle, word: &WordWithIndex, dict_id: &str) -> Duration {
+    let (show_duration, answer_delay) = {
+        let state = app.state::<AppState>();
+        let settings = state.settings.lock().unwrap();
+        (settings.show_duration, settings.answer_delay)
+    };
+    // The renderer uses the same timing snapshot and owns the visible lifetime.
+    let _ = app.emit("show-word", serde_json::json!({
+        "term": word.entry.term,
+        "definition": word.entry.definition,
+        "index": word.index,
+        "dictId": dict_id,
+        "showDuration": show_duration,
+        "answerDelay": answer_delay
+    }));
+    Duration::from_secs_f32(show_duration.max(0.0)) + Duration::from_secs(answer_delay.into())
+}
+
 // ── All-learned handler ───────────────────────────────────────────────────────
 
 /// Returns `true` if a new dictionary was found and switched to.
@@ -105,7 +124,6 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
     let show_secs = app.state::<AppState>().settings.lock().unwrap().show_duration;
     let fade_secs = app.state::<AppState>().settings.lock().unwrap().fade_duration;
     tokio::time::sleep(Duration::from_secs_f32(show_secs)).await;
-    let _ = app.emit("hide-word", ());
     // Wait for the CSS fade-out to complete before showing the next card
     tokio::time::sleep(Duration::from_secs_f32(fade_secs)).await;
 
@@ -148,7 +166,6 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
                 let show_secs = app.state::<AppState>().settings.lock().unwrap().show_duration;
                 let fade_secs = app.state::<AppState>().settings.lock().unwrap().fade_duration;
                 tokio::time::sleep(Duration::from_secs_f32(show_secs)).await;
-                let _ = app.emit("hide-word", ());
                 tokio::time::sleep(Duration::from_secs_f32(fade_secs)).await;
 
                 switched = true;
@@ -167,7 +184,6 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
         }));
         let show_secs = app.state::<AppState>().settings.lock().unwrap().show_duration;
         tokio::time::sleep(Duration::from_secs_f32(show_secs)).await;
-        let _ = app.emit("hide-word", ());
     }
 
     switched
@@ -235,10 +251,6 @@ pub fn start_loop(app_handle: AppHandle) {
             };
 
             if let Some(word) = entry {
-                // Set current word in state (used by Ctrl+Shift+K guard in card.js)
-                *app_handle.state::<AppState>().current_word.lock().unwrap() = Some(word.clone());
-                *app_handle.state::<AppState>().is_card_visible.lock().unwrap() = true;
-
                 // Reposition card to the monitor under the cursor
                 if let Some(window) = app_handle.get_webview_window("main") {
                     let pos = app_handle.state::<AppState>().settings.lock().unwrap().position.clone();
@@ -254,25 +266,14 @@ pub fn start_loop(app_handle: AppHandle) {
                 }
                 let _ = app_handle.emit("stats-updated", ());
 
-                // Show word (include index so card.js can pass it back for mark_learned)
-                let _ = app_handle.emit("show-word", serde_json::json!({
-                    "term": word.entry.term,
-                    "definition": word.entry.definition,
-                    "index": word.index,
-                    "dictId": dict_id
-                }));
-
-                // Hide after show_duration — but wake early if all_learned is signalled
-                let show_secs = app_handle.state::<AppState>().settings.lock().unwrap().show_duration;
+                let duration = emit_word(&app_handle, &word, &dict_id);
                 let app_state = app_handle.state::<AppState>();
                 tokio::select! {
-                    _ = tokio::time::sleep(Duration::from_secs_f32(show_secs)) => {}
+                    biased;
                     _ = wait_for_completion(&app_state.all_learned, &app_state.all_learned_notify) => {}
+                    _ = app_state.manual_trigger.notified() => {}
+                    _ = tokio::time::sleep(duration) => {}
                 }
-                let _ = app_handle.emit("hide-word", ());
-
-                *app_handle.state::<AppState>().is_card_visible.lock().unwrap() = false;
-                *app_handle.state::<AppState>().current_word.lock().unwrap() = None;
 
                 // If mark_learned signalled all_learned, handle it immediately
                 if *app_handle.state::<AppState>().all_learned.lock().unwrap() {

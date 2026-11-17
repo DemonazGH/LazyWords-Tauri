@@ -185,8 +185,6 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                 (settings.active_dictionary.clone(), state.word_engine.lock().unwrap().get_random_word())
             };
             if let Some(word) = entry {
-                *state.current_word.lock().unwrap() = Some(word.clone());
-                *state.is_card_visible.lock().unwrap() = true;
                 if let Some(window) = app.get_webview_window("main") {
                     let pos = state.settings.lock().unwrap().position.clone();
                     crate::reposition_window(&window, &pos);
@@ -198,12 +196,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                     crate::commands::save_stats_to_disk(app, &tracker.stats);
                 }
                 let _ = app.emit("stats-updated", ());
-                let _ = app.emit("show-word", serde_json::json!({
-                    "term": word.entry.term,
-                    "definition": word.entry.definition,
-                    "index": word.index,
-                    "dictId": dict_id
-                }));
+                crate::timer::emit_word(app, &word, &dict_id);
                 // Signal timer to reset its interval (prevents double card)
                 state.manual_trigger.notify_one();
             }
