@@ -6,6 +6,7 @@ const definitionEl = document.getElementById('definition');
 
 let currentSettings = {};
 let hideTimer = null;
+let revealTimer = null;
 let currentWordIndex = null; // index of the currently displayed card (null when hidden)
 let currentDictionaryId = null;
 let isCardVisible = false;
@@ -15,17 +16,13 @@ async function init() {
   currentSettings = await window.api.getSettings();
   applySettings(currentSettings);
 
-  window.api.onShowWord(({ term, definition, index, dictId }) => {
+  window.api.onShowWord(({ term, definition, index, dictId, showDuration, answerDelay }) => {
     if (dictId !== currentSettings.activeDictionary) return;
     termEl.textContent = term;
     definitionEl.textContent = definition;
     currentWordIndex = index ?? null;
     currentDictionaryId = dictId;
-    return showCardTemporarily().catch(console.error);
-  });
-
-  window.api.onHideWord(() => {
-    hideCard();
+    return showCardTemporarily(showDuration, answerDelay).catch(console.error);
   });
 
   window.api.onUpdateSettings((settings) => {
@@ -100,16 +97,26 @@ function showCard() {
   isCardVisible = true;
 }
 
-async function showCardTemporarily() {
+function cancelCardTimers() {
   clearTimeout(hideTimer);
+  clearTimeout(revealTimer);
+  hideTimer = revealTimer = null;
+}
+
+async function showCardTemporarily(showDuration = currentSettings.showDuration ?? 4, answerDelay = 0) {
+  cancelCardTimers();
   isCardVisible = false;
   cardEl.classList.remove('visible');
+  definitionEl.classList.toggle('answer-pending', answerDelay > 0);
   if (!await fitCard()) return;
   showCard();
-  clearTimeout(hideTimer);
-  hideTimer = setTimeout(() => {
-    hideCard();
-  }, (currentSettings.showDuration ?? 4) * 1000);
+  const reveal = () => {
+    revealTimer = null;
+    definitionEl.classList.remove('answer-pending');
+    hideTimer = setTimeout(hideCard, showDuration * 1000);
+  };
+  if (answerDelay > 0) revealTimer = setTimeout(reveal, answerDelay * 1000);
+  else reveal();
 }
 
 function hideCard() {
@@ -118,7 +125,7 @@ function hideCard() {
   currentDictionaryId = null;
   cardEl.classList.remove('visible');
   isCardVisible = false;
-  clearTimeout(hideTimer);
+  cancelCardTimers();
 }
 
 init();

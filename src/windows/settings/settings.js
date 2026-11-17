@@ -28,6 +28,7 @@ function applyLocale(strings) {
   }
 
   // Re-render dynamic parts with new strings
+  renderAnswerDelay();
   renderLearnedList();
   if (document.getElementById('tab-stats').classList.contains('active')) {
     loadStats();
@@ -137,6 +138,22 @@ bindRange('fontSize', 'fontSize');
 bindRange('showDuration', 'showDuration');
 bindRange('interval', 'interval');
 bindRange('fadeDuration', 'fadeDuration', 1);
+
+function renderAnswerDelay() {
+  const seconds = currentSettings.answerDelay ?? 0;
+  const input = document.getElementById('answerDelay');
+  const label = seconds === 0
+    ? (L['settings.answerDelay.off'] ?? 'Off')
+    : `${seconds} ${L['settings.showDuration.unit'] ?? 'sec'}`;
+  input.value = seconds;
+  input.setAttribute('aria-valuetext', label);
+  document.getElementById('answerDelay-val').textContent = label;
+}
+
+document.getElementById('answerDelay').addEventListener('input', (e) => {
+  saveDebounced({ answerDelay: Number(e.target.value) });
+  renderAnswerDelay();
+});
 
 // ── Checkbox ───────────────────────────────────────────────
 
@@ -503,6 +520,7 @@ async function refreshSettingsData() {
   const settings = await window.api.getSettings();
   if (revision !== settingsRevision) return;
   currentSettings = { ...settings, ...pendingSettingsPatch };
+  renderAnswerDelay();
   document.getElementById('autoStart').checked = currentSettings.autoStart ?? true;
   await loadDictionaries();
   await loadLearnedList();

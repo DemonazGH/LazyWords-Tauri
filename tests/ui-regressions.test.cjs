@@ -12,13 +12,14 @@ function renderer(file, api = {}) {
   function element() {
     const classes = new Set();
     return {
-      value: '', style: {}, dataset: {}, children: [], listeners: {},
+      value: '', style: {}, dataset: {}, children: [], listeners: {}, attributes: {},
       classList: {
         add: value => classes.add(value), remove: value => classes.delete(value),
         contains: value => classes.has(value),
         toggle: (value, on) => on ? classes.add(value) : classes.delete(value),
       },
       addEventListener(name, cb) { this.listeners[name] = cb; },
+      setAttribute(name, value) { this.attributes[name] = value; },
       appendChild(child) { this.children.push(child); if (child.selected) this.value = child.value; },
       set innerHTML(value) { this.children = []; this.value = ''; },
       getBoundingClientRect: () => ({ width: 500, height: 360 }),
@@ -224,4 +225,108 @@ test('card grows to measured content and submits source dictionary only while vi
   await callbacks.onShowWord({ term: 'new card', definition: 'new text', index: 0, dictId: 'new' });
   callbacks.onMarkKnown();
   assert.deepEqual(marked, [[1, 'old'], [0, 'new']]);
+});
+
+test('answer delay displays a localized value and saves the number of seconds', async () => {
+  const writes = [];
+  const app = renderer('src/windows/settings/settings.js', {
+    saveSettings: async patch => { writes.push({ ...patch }); return true; },
+  });
+  const input = app.elements.get('answerDelay');
+  app.run('L = {"settings.answerDelay.off":"Выкл.", "settings.showDuration.unit":"сек"}; renderAnswerDelay()');
+  assert.equal(input.attributes['aria-valuetext'], 'Выкл.');
+  input.value = '4';
+  input.listeners.input({ target: input });
+  assert.equal(app.elements.get('answerDelay-val').textContent, '4 сек');
+  assert.equal(input.attributes['aria-valuetext'], '4 сек');
+  await app.tick(200);
+  assert.deepEqual(writes, [{ answerDelay: 4 }]);
+});
+
+async function delayedCard(apiOverrides = {}) {
+  const callbacks = {};
+  const api = {
+    getSettings: async () => ({ activeDictionary: 'deck', showDuration: 4, answerDelay: 2 }),
+    getCardLayout: async () => ({ width: 500, maxHeight: 1000 }),
+    resizeCard: async () => {},
+    ...apiOverrides,
+  };
+  for (const name of ['onShowWord', 'onUpdateSettings', 'onAllLearned',
+    'onSwitchedDict', 'onAllDictsLearned', 'onMarkKnown', 'onDictAutoSwitched']) {
+    api[name] = cb => { callbacks[name] = cb; };
+  }
+  const app = renderer('src/windows/card/card.js', api);
+  await app.run('init()');
+  return {
+    ...app, callbacks,
+    show: (def, answerDelay = 2) => callbacks.onShowWord({
+      term: def, definition: def, index: 1, dictId: 'deck', showDuration: 4, answerDelay,
+    }),
+    visible: () => app.elements.get('card').classList.contains('visible'),
+    pending: () => app.elements.get('definition').classList.contains('answer-pending'),
+  };
+}
+
+test('delayed answer is measured before reveal and stays visible for the full show duration', async () => {
+  const heights = [];
+  const app = await delayedCard({ resizeCard: async height => heights.push(height) });
+  await app.show('definition');
+  assert.equal(app.visible(), true);
+  assert.equal(app.pending(), true);
+  assert.deepEqual(heights, [360]);
+  await app.tick(4000);
+  assert.equal(app.visible(), true, 'the old show duration does not hide a pending answer');
+  await app.tick(2000);
+  assert.equal(app.pending(), false);
+  assert.equal(app.visible(), true);
+  assert.deepEqual(heights, [360], 'reveal does not trigger another layout');
+  await app.tick(4000);
+  assert.equal(app.visible(), false);
+});
+
+test('a replacement card cancels both an old reveal and an old hide', async () => {
+  const app = await delayedCard();
+  await app.show('first');
+  await app.show('second', 5);
+  await app.tick(2000);
+  assert.equal(app.pending(), true, 'the first reveal cannot reveal the second card');
+  await app.tick(5000);
+  assert.equal(app.pending(), false);
+  await app.show('third');
+  await app.tick(4000);
+  assert.equal(app.visible(), true, 'the second hide cannot dismiss the third card');
+  assert.equal(app.pending(), true);
+  await app.tick(2000);
+  assert.equal(app.pending(), false);
+});
+
+test('mark-known and dictionary changes cancel pending reveals; status cards do not wait', async () => {
+  const marked = [];
+  const app = await delayedCard({ markLearned: (...args) => marked.push(args) });
+  await app.show('learned early');
+  app.callbacks.onMarkKnown();
+  assert.deepEqual(marked, [[1, 'deck']]);
+  await app.tick(2000);
+  assert.equal(app.visible(), false);
+  assert.equal(app.pending(), true, 'answer stays hidden when the card fades');
+
+  await app.show('old dictionary');
+  app.callbacks.onUpdateSettings({ activeDictionary: 'another', answerDelay: 2, showDuration: 4 });
+  await app.tick(2000);
+  assert.equal(app.visible(), false);
+  assert.equal(app.pending(), true);
+  await app.callbacks.onAllLearned({ headline: 'Done', dictName: 'Deck' });
+  assert.equal(app.visible(), true);
+  assert.equal(app.pending(), false);
+  await app.tick(4000);
+  assert.equal(app.visible(), false);
+});
+
+test('off shows the answer immediately and uses the original duration', async () => {
+  const app = await delayedCard();
+  await app.show('definition', 0);
+  assert.equal(app.visible(), true);
+  assert.equal(app.pending(), false);
+  await app.tick(4000);
+  assert.equal(app.visible(), false);
 });
