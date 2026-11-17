@@ -73,7 +73,7 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 
 **System tray** (`tray.rs`):
 - Tray icon with normal/dimmed (paused) states; tooltip "LazyWords"
-- Menu: Pause/Resume, Next word, Dictionary submenu (active dict has checkmark), Settings, Quit
+- Menu: Pause/Resume, Next word, Dictionary submenu (active dict has checkmark), Settings, Quick Add, Quit
 - All labels localized via `t()` — menu rebuilt on language change
 - Quit saves learned/stats/settings before `app.exit(0)`
 
@@ -82,7 +82,8 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 - `Ctrl+Shift+P` – pause/resume; updates tray icon and menu
 - `Ctrl+Shift+N` – implicit unpause + show next card immediately; records `shown` stat; fires `manual_trigger` to reset timer interval
 - `Ctrl+Shift+K` – emits `mark-known-shortcut`; card.js handles it
-- All four shortcuts dismiss the onboarding window if it's open
+- `Ctrl+Shift+A` opens Quick Add. On Windows, a single-line clipboard selection can prefill the term.
+- Global shortcuts dismiss the onboarding window if it's open.
 - Registration errors are logged per shortcut and shown in a localized warning; the tray and settings remain usable.
 
 **Window management** (`lib.rs`):
@@ -120,12 +121,15 @@ Settings merge pending slider patches and serialize persistence. Discrete change
 flush pending sliders; failed saves do not show success. Dictionary selection
 discards stale async responses. Card state is invalidated on dictionary switches.
 
+**`src/windows/quick-add/`** - Local form for saving a term and definition. Optional exact-match suggestions come from the active bundled dictionary. Opening or cancelling never saves a card, and saving never changes the active dictionary.
+
 **`src/modules/`** — JS stubs from the Electron era; not part of active code paths.
 
 ### Persistence
 
 All data written to OS AppData directory via `tauri::path`:
 - `data/settings.json`, `data/stats.json`, `data/learned.json`
+- `data/my-words.csv` - Quick Add's app-managed deck. Writes atomically append cards without changing existing learned row indices.
 - `dictionaries/` — user-imported dictionaries
 
 ### Key Design Notes

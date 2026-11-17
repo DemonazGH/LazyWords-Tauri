@@ -333,7 +333,7 @@ fn get_user_dicts_dir(app: &AppHandle) -> PathBuf {
     dir
 }
 
-fn get_bundled_dicts_dir(app: &AppHandle) -> PathBuf {
+pub(crate) fn get_bundled_dicts_dir(app: &AppHandle) -> PathBuf {
     let mut dir = app.path().resolve("dictionaries", tauri::path::BaseDirectory::Resource).unwrap_or_default();
     if !dir.exists() {
         let mut p = std::env::current_dir().unwrap();
@@ -341,6 +341,13 @@ fn get_bundled_dicts_dir(app: &AppHandle) -> PathBuf {
         dir = p;
     }
     dir
+}
+
+pub fn dictionary_display_name(app: &AppHandle, id: &str) -> String {
+    if id == crate::quick_add::DECK_ID {
+        return app.state::<AppState>().i18n.lock().unwrap().t("quickAdd.deck").to_string();
+    }
+    id.replace('_', " ").to_uppercase()
 }
 
 fn scan_dicts(dir: &PathBuf, source: &str) -> Vec<Value> {
@@ -352,6 +359,7 @@ fn scan_dicts(dir: &PathBuf, source: &str) -> Vec<Value> {
                 if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                     if ext == "csv" || ext == "json" || ext == "xlsx" {
                         let id = path.file_stem().unwrap().to_string_lossy().to_string();
+                        if crate::quick_add::is_reserved(&id) { continue; }
                         let name = id.replace('_', " ").to_uppercase();
                         dicts.push(serde_json::json!({
                             "id": id,
@@ -367,6 +375,9 @@ fn scan_dicts(dir: &PathBuf, source: &str) -> Vec<Value> {
 }
 
 pub fn load_dictionary_by_id(app: &AppHandle, id: &str) -> Option<Vec<crate::word_engine::WordEntry>> {
+    if crate::quick_add::is_reserved(id) {
+        return crate::quick_add::load_deck(app);
+    }
     let user_dir = get_user_dicts_dir(app);
     let bundled_dir = get_bundled_dicts_dir(app);
     for dir in &[&user_dir, &bundled_dir] {
@@ -393,13 +404,18 @@ pub fn get_all_dict_ids(app: &AppHandle) -> Vec<String> {
                     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                         if ["csv", "json", "xlsx"].contains(&ext) {
                             if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                                ids.push(stem.to_string());
+                                if !crate::quick_add::is_reserved(stem) {
+                                    ids.push(stem.to_string());
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+    if crate::quick_add::has_deck(app) {
+        ids.push(crate::quick_add::DECK_ID.into());
     }
     ids
 }
@@ -409,6 +425,14 @@ pub fn get_dictionaries(app: AppHandle, _state: State<'_, AppState>) -> Value {
     let mut all = Vec::new();
     all.extend(scan_dicts(&get_bundled_dicts_dir(&app), "bundled"));
     all.extend(scan_dicts(&get_user_dicts_dir(&app), "user"));
+    if crate::quick_add::has_deck(&app) {
+        let id = crate::quick_add::DECK_ID;
+        all.push(serde_json::json!({
+            "id": id,
+            "name": dictionary_display_name(&app, id),
+            "source": "quick-add"
+        }));
+    }
     serde_json::json!(all)
 }
 
@@ -435,6 +459,9 @@ fn import_from_picker(app: &AppHandle, window: &tauri::WebviewWindow) -> Value {
 
         let user_dir = get_user_dicts_dir(&app);
         let id = path.file_stem().unwrap().to_string_lossy().to_string();
+        if crate::quick_add::is_reserved(&id) {
+            return serde_json::json!({ "error": "Dictionary name is reserved for Quick Add" });
+        }
         let target_path = user_dir.join(path.file_name().unwrap());
 
         if target_path.exists() {
@@ -454,6 +481,9 @@ fn import_from_picker(app: &AppHandle, window: &tauri::WebviewWindow) -> Value {
 
 #[tauri::command]
 pub fn delete_dictionary(app: AppHandle, state: State<'_, AppState>, id: String) -> Value {
+    if crate::quick_add::is_reserved(&id) {
+        return serde_json::json!({ "error": "My Words is managed by Quick Add" });
+    }
     let user_dir = get_user_dicts_dir(&app);
     let mut deleted = false;
 

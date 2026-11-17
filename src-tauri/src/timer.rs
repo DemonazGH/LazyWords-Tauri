@@ -112,7 +112,7 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
     *app.state::<AppState>().all_learned.lock().unwrap() = false;
 
     let current_dict_id = app.state::<AppState>().settings.lock().unwrap().active_dictionary.clone();
-    let dict_name = current_dict_id.replace('_', " ").to_uppercase();
+    let dict_name = crate::commands::dictionary_display_name(app, &current_dict_id);
 
     // Show "all words learned" card for current dictionary
     let _ = app.emit("show-all-learned", serde_json::json!({
@@ -141,7 +141,7 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
             let has_unlearned = words.iter().enumerate().any(|(i, _)| !learned_set.contains(&i));
 
             if has_unlearned {
-                let new_dict_name = dict_id.replace('_', " ").to_uppercase();
+                let new_dict_name = crate::commands::dictionary_display_name(app, dict_id);
 
                 // Update settings
                 {

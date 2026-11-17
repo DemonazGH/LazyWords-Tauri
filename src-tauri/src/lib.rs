@@ -9,6 +9,7 @@ mod timer;
 mod tray;
 mod card_layout;
 mod autostart;
+mod quick_add;
 
 #[cfg(all(test, windows))]
 #[path = "../windows/autostart_cleanup.rs"]
@@ -229,6 +230,10 @@ pub fn run() {
                 }
             }
 
+            if let Err(error) = quick_add::create_window(app) {
+                eprintln!("Could not create the Quick Add window: {error}");
+            }
+
             // ── System tray ──
             {
                 let tray_icon = tray::create_tray(&app.handle())?;
@@ -309,12 +314,14 @@ pub fn run() {
             let ctrl_shift_p = Shortcut::from_str("ctrl+shift+p").unwrap();
             let ctrl_shift_n = Shortcut::from_str("ctrl+shift+n").unwrap();
             let ctrl_shift_k = Shortcut::from_str("ctrl+shift+k").unwrap();
+            let ctrl_shift_a = Shortcut::from_str("ctrl+shift+a").unwrap();
 
             let shortcuts = [
                 ctrl_shift_w.clone(),
                 ctrl_shift_p.clone(),
                 ctrl_shift_n.clone(),
                 ctrl_shift_k.clone(),
+                ctrl_shift_a.clone(),
             ];
 
             let mut failed_shortcuts = Vec::new();
@@ -324,6 +331,10 @@ pub fn run() {
                 let p = ctrl_shift_p.clone();
                 let n = ctrl_shift_n.clone();
                 let k = ctrl_shift_k.clone();
+                let a = ctrl_shift_a.clone();
+                if sc == a && app.get_webview_window("quick-add").is_none() {
+                    continue;
+                }
 
                 let result = app.handle().global_shortcut().on_shortcut(sc, move |app, shortcut, event| {
                     if event.state != ShortcutState::Pressed { return; }
@@ -394,6 +405,11 @@ pub fn run() {
                             let _ = ob.close();
                         }
                         let _ = app.emit("mark-known-shortcut", ());
+                    } else if shortcut == &a {
+                        if let Some(ob) = app.get_webview_window("onboarding") {
+                            let _ = ob.close();
+                        }
+                        quick_add::open(app);
                     }
                 });
                 if let Err(error) = result {
@@ -432,7 +448,10 @@ pub fn run() {
             commands::import_dictionary,
             commands::delete_dictionary,
             card_layout::get_card_layout,
-            card_layout::resize_card
+            card_layout::resize_card,
+            quick_add::take_quick_add_draft,
+            quick_add::save_quick_card,
+            quick_add::close_quick_add
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

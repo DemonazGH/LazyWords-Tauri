@@ -1,0 +1,6 @@
+{
+  "identifier": "quick-add",
+  "description": "Allow the Quick Add window to receive local UI events.",
+  "windows": ["quick-add"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}
