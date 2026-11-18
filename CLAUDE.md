@@ -57,7 +57,7 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 - `settings` – user config (intervals, answer delay, font size, position, language, autostart, first_launch)
 - `word_engine` – holds loaded dictionary + `HashSet<usize>` of learned card indices
 - `stats_tracker` – daily/streak statistics
-- `learned` – `HashMap<dict_name, Vec<usize>>` persisted across sessions
+- `learned` – `HashMap<dict_name, Vec<usize>>` persisted across sessions; both learned data and statistics must load successfully before AppState exists
 - `is_paused`, `all_learned`, `all_dicts_done` – runtime state
 - `all_learned_notify` – wakes card-duration and interval waits when completion becomes pending
 - `manual_trigger` – interrupts timer pacing when `Ctrl+Shift+N` / tray "Next" shows a card manually
@@ -129,6 +129,8 @@ discards stale async responses. Card state is invalidated on dictionary switches
 
 All data written to OS AppData directory via `tauri::path`:
 - `data/settings.json`, `data/stats.json`, `data/learned.json`
+- Learned data and statistics use `profile_data.rs`: only missing files default to empty. Invalid or unreadable files abort startup with a localized recovery dialog before dictionary fallback, onboarding, autostart or timers can write anything.
+- Learned and stats writes use a flushed, synced temp file in the same directory and atomic replacement. Failed writes are logged, leave the previous destination intact, and clean up their temp files. These are independent per-file saves, not a transaction across both files.
 - `data/my-words.csv` - Quick Add's app-managed deck. Writes atomically append cards without changing existing learned row indices.
 - `dictionaries/` — user-imported dictionaries
 
@@ -139,6 +141,7 @@ All data written to OS AppData directory via `tauri::path`:
 - CSP disabled (`"csp": null`).
 - `show-word` includes the source dictionary ID with term/definition/index and a timing snapshot. Rust paces scheduling for answer delay plus show duration; only the renderer hides cards. Status cards are never delayed.
 - Answer delay is Off by default for new and existing profiles, or 1–5 seconds when enabled. Show duration is the time after the answer appears. Timing changes apply to the next card.
+
 - Default `active_dictionary` is `""` (empty) — timer sleeps until a dictionary is chosen.
 - Completion wakes the timer immediately, including when the last card was shown manually.
 - Use an isolated, backed-up profile for onboarding tests; never delete a real user's settings/progress to prepare QA.
@@ -173,9 +176,10 @@ autostart and native MSI cleanup behavior; counts differ on other platforms.
 | `stats.rs` | `record_shown` increments today's count; `record_learned` increments today's count; `decrement_learned` does not go below zero; streak = 1 for single day; streak counts consecutive days; `get_last_7_days` returns exactly 7 entries |
 | `i18n.rs` | `set_locale("en"/"ru")` switches locale; `t()` returns correct string; `t()` returns raw template string with `{placeholder}` intact (substitution is done in JS); `current_locale` reflects `set_locale`; unknown key returns the key itself as fallback |
 | `settings.rs` | Default values match expected constants; round-trip JSON serialization/deserialization is lossless |
+| `profile_data.rs` | Missing files do not write; valid legacy progress and stats round-trip; invalid or unreadable files abort loading unchanged; atomic saves preserve originals on serialization/replacement failure; Windows read and replacement locks |
 
 Additional Rust coverage includes card layout, completion timers, onboarding
-recovery, persistence failures, and Windows startup/cleanup. `npm test` runs 29
+recovery, persistence failures, and Windows startup/cleanup. `npm test` runs
 Node.js regressions for renderer races, settings writes, onboarding and packaging
 contracts. `src/modules/` remains legacy Electron code, not the active backend.
 
@@ -206,6 +210,16 @@ tests do not certify a newly rebuilt package. Review exact artifacts before rele
 
 ## Fixed Bugs
 
+- Corrupt or unreadable learned data/statistics no longer silently reset at startup.
+  Loading either file unsuccessfully prevents AppState and all profile writers
+  from initializing; the recovery dialog identifies the affected file. Normal
+  Quit cannot overwrite an empty fallback because no tray handler is created.
+- Recovery-dialog acknowledgement terminates with failure code 1 before any
+  profile state has been initialized. The native desktop event-loop exit path
+  can otherwise report success despite an explicit error exit request.
+- Learned data and statistics no longer use direct, truncating writes. Saves
+  flush and sync a complete temporary file before atomic replacement, log errors,
+  and preserve existing bytes if replacement fails. Both file formats are unchanged.
 - Unreadable settings no longer get replaced with defaults at startup. A missing
   file still means first launch; read or parse failures show a recovery message
   and exit before onboarding or autostart can change the profile. Saves flush a

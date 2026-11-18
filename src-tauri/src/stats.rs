@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs;
+use std::io;
 use std::path::Path;
 use chrono::Local;
 
@@ -85,24 +85,12 @@ impl StatsTracker {
     }
 }
 
-pub fn load_stats(path: &Path) -> Stats {
-    if path.exists() {
-        if let Ok(data) = fs::read_to_string(path) {
-            if let Ok(stats) = serde_json::from_str::<Stats>(&data) {
-                return stats;
-            }
-        }
-    }
-    Stats::default()
+pub fn load_stats(path: &Path) -> io::Result<Stats> {
+    crate::profile_data::load_json(path)
 }
 
-pub fn save_stats(path: &Path, stats: &Stats) {
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    if let Ok(data) = serde_json::to_string_pretty(stats) {
-        let _ = fs::write(path, data);
-    }
+pub fn save_stats(path: &Path, stats: &Stats) -> io::Result<()> {
+    crate::profile_data::save_json(path, stats)
 }
 
 #[cfg(test)]

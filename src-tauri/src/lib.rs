@@ -10,6 +10,7 @@ mod tray;
 mod card_layout;
 mod autostart;
 mod quick_add;
+mod profile_data;
 
 #[cfg(all(test, windows))]
 #[path = "../windows/autostart_cleanup.rs"]
@@ -177,12 +178,31 @@ pub fn run() {
                         translation
                     }.replace("{path}", &settings_path.to_string_lossy());
                     app.dialog().message(message).title("LazyWords")
-                        .kind(MessageDialogKind::Error).show(move |_| handle.exit(1));
+                        .kind(MessageDialogKind::Error).show(|_| std::process::exit(1));
                     // Do not initialize onboarding, autostart, or any profile writers.
                     return Ok(());
                 }
             };
-            let state = state::init_state(app.handle(), &data_dir, settings);
+            let state = match state::init_state(app.handle(), &data_dir, settings.clone()) {
+                Ok(state) => state,
+                Err(error) => {
+                    use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+                    eprintln!("Could not read profile data: {error}");
+                    let handle = app.handle().clone();
+                    let i18n = i18n::I18n::for_app(&handle, &settings.language);
+                    let key = "profile.loadError";
+                    let translation = i18n.t(key);
+                    let message = if translation == key {
+                        "LazyWords could not read your learned progress or statistics and will close without changing your data. Check the file permissions or restore a backup before restarting.\n\n{path}"
+                    } else {
+                        translation
+                    }.replace("{path}", &error.path.to_string_lossy());
+                    app.dialog().message(message).title("LazyWords")
+                        .kind(MessageDialogKind::Error).show(|_| std::process::exit(1));
+                    // No state, tray Quit handler, startup migration or timer may run.
+                    return Ok(());
+                }
+            };
 
             // Load active dictionary + apply persisted learned indices.
             // If the saved dict ID can't be found (e.g. renamed file), fall back to the
