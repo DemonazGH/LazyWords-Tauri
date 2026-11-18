@@ -12,6 +12,7 @@ pub struct AppState {
     pub stats_tracker: Mutex<StatsTracker>,
     pub learned: Mutex<HashMap<String, Vec<usize>>>,
     pub word_engine: Mutex<WordEngine>,
+    pub scheduling_history: Mutex<crate::scheduler::SchedulingHistory>,
     pub quick_add_draft: Mutex<Option<crate::quick_add::Draft>>,
     pub i18n: Mutex<crate::i18n::I18n>,
     pub is_paused: Mutex<bool>,
@@ -40,6 +41,9 @@ pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> Result
         stats_tracker: Mutex::new(StatsTracker::new(stats)),
         learned: Mutex::new(learned),
         word_engine: Mutex::new(engine),
+        scheduling_history: Mutex::new(crate::scheduler::SchedulingHistory::load(
+            app_dir.join("progress.json"),
+        )),
         quick_add_draft: Mutex::new(None),
         i18n: Mutex::new(i18n),
         is_paused: Mutex::new(false),

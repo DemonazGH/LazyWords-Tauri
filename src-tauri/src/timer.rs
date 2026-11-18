@@ -242,13 +242,7 @@ pub fn start_loop(app_handle: AppHandle) {
             // Skip if a fullscreen application is active
             if is_fullscreen_app_active() { continue; }
 
-            // Fetch random word
-            let (dict_id, entry) = {
-                let state = app_handle.state::<AppState>();
-                let settings = state.settings.lock().unwrap();
-                let entry = state.word_engine.lock().unwrap().get_random_word();
-                (settings.active_dictionary.clone(), entry)
-            };
+            let (dict_id, entry) = crate::scheduler::select_next(&app_handle.state::<AppState>());
 
             if let Some(word) = entry {
                 // Reposition card to the monitor under the cursor

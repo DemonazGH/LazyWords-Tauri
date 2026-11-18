@@ -20,6 +20,7 @@ pub struct WordWithIndex {
 pub struct WordEngine {
     pub dictionary: Vec<WordEntry>,
     pub learned_indices: HashSet<usize>,
+    card_ids: Vec<String>,
 }
 
 impl WordEngine {
@@ -27,10 +28,12 @@ impl WordEngine {
         Self {
             dictionary: Vec::new(),
             learned_indices: HashSet::new(),
+            card_ids: Vec::new(),
         }
     }
 
     pub fn load_dictionary(&mut self, words: Vec<WordEntry>) {
+        self.card_ids = words.iter().map(crate::scheduler::card_id).collect();
         self.dictionary = words;
     }
 
@@ -38,19 +41,21 @@ impl WordEngine {
         self.learned_indices = indices.into_iter().collect();
     }
 
-    pub fn get_random_word(&self) -> Option<WordWithIndex> {
-        let active: Vec<_> = self.dictionary
+    pub fn unlearned_cards(&self) -> impl Iterator<Item = (usize, &WordEntry)> {
+        self.dictionary
             .iter()
             .enumerate()
             .filter(|(i, _)| !self.learned_indices.contains(i))
-            .collect();
+    }
 
-        if active.is_empty() {
-            return None;
-        }
+    pub fn card_id(&self, index: usize) -> &String {
+        &self.card_ids[index]
+    }
 
+    pub fn get_random_word(&self) -> Option<WordWithIndex> {
+        let active: Vec<_> = self.unlearned_cards().collect();
         let mut rng = rand::thread_rng();
-        let (index, entry) = active.choose(&mut rng).unwrap();
+        let (index, entry) = active.choose(&mut rng)?;
 
         Some(WordWithIndex {
             entry: (*entry).clone(),

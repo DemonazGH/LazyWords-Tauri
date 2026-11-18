@@ -186,10 +186,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
             // Implicit unpause
             *state.is_paused.lock().unwrap() = false;
 
-            let (dict_id, entry) = {
-                let settings = state.settings.lock().unwrap();
-                (settings.active_dictionary.clone(), state.word_engine.lock().unwrap().get_random_word())
-            };
+            let (dict_id, entry) = crate::scheduler::select_next(&state);
             if let Some(word) = entry {
                 if let Some(window) = app.get_webview_window("main") {
                     let pos = state.settings.lock().unwrap().position.clone();
