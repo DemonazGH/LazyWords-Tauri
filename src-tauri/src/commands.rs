@@ -12,17 +12,16 @@ use crate::settings::Settings;
 
 pub fn save_learned_to_disk(app: &AppHandle, learned: &HashMap<String, Vec<usize>>) {
     let path = app.path().app_data_dir().unwrap().join("data").join("learned.json");
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    if let Ok(data) = serde_json::to_string_pretty(learned) {
-        let _ = fs::write(path, data);
+    if let Err(error) = crate::profile_data::save_json(&path, learned) {
+        eprintln!("Failed to save learned progress ({}): {error}", path.display());
     }
 }
 
 pub fn save_stats_to_disk(app: &AppHandle, stats: &crate::stats::Stats) {
     let path = app.path().app_data_dir().unwrap().join("data").join("stats.json");
-    crate::stats::save_stats(&path, stats);
+    if let Err(error) = crate::stats::save_stats(&path, stats) {
+        eprintln!("Failed to save statistics ({}): {error}", path.display());
+    }
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────

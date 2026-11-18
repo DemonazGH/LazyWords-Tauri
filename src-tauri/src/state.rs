@@ -4,7 +4,7 @@ use std::sync::Mutex;
 use tauri::AppHandle;
 
 use crate::settings::Settings;
-use crate::stats::{StatsTracker, load_stats};
+use crate::stats::StatsTracker;
 use crate::word_engine::WordEngine;
 
 pub struct AppState {
@@ -27,27 +27,15 @@ pub struct AppState {
     pub tray: Mutex<Option<tauri::tray::TrayIcon>>,
 }
 
-pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> AppState {
-    let stats_path = app_dir.join("stats.json");
-    let learned_path = app_dir.join("learned.json");
-
-    let stats = load_stats(&stats_path);
-    
-    let learned: HashMap<String, Vec<usize>> = if learned_path.exists() {
-        if let Ok(data) = std::fs::read_to_string(&learned_path) {
-            serde_json::from_str(&data).unwrap_or_default()
-        } else {
-            HashMap::new()
-        }
-    } else {
-        HashMap::new()
-    };
+pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> Result<AppState, crate::profile_data::LoadError> {
+    let crate::profile_data::ProfileData { learned, stats } =
+        crate::profile_data::ProfileData::load(app_dir)?;
 
     let engine = WordEngine::new();
     
     let i18n = crate::i18n::I18n::for_app(app, &settings.language);
     
-    AppState {
+    Ok(AppState {
         settings: Mutex::new(settings),
         stats_tracker: Mutex::new(StatsTracker::new(stats)),
         learned: Mutex::new(learned),
@@ -60,5 +48,5 @@ pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> AppSta
         all_learned_notify: tokio::sync::Notify::new(),
         manual_trigger: tokio::sync::Notify::new(),
         tray: Mutex::new(None),
-    }
+    })
 }
