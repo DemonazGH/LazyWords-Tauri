@@ -11,6 +11,7 @@ mod card_layout;
 mod autostart;
 mod quick_add;
 mod profile_data;
+mod scheduler;
 
 #[cfg(all(test, windows))]
 #[path = "../windows/autostart_cleanup.rs"]
@@ -398,10 +399,7 @@ pub fn run() {
                         // Implicit unpause so timer resumes
                         *state.is_paused.lock().unwrap() = false;
 
-                        let (dict_id, entry) = {
-                            let settings = state.settings.lock().unwrap();
-                            (settings.active_dictionary.clone(), state.word_engine.lock().unwrap().get_random_word())
-                        };
+                        let (dict_id, entry) = scheduler::select_next(&state);
                         if let Some(word) = entry {
                             if let Some(window) = app.get_webview_window("main") {
                                 let pos = state.settings.lock().unwrap().position.clone();

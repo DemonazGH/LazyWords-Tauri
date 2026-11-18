@@ -157,6 +157,32 @@ document.getElementById('answerDelay').addEventListener('input', (e) => {
 
 // ── Checkbox ───────────────────────────────────────────────
 
+function renderSmartScheduling() {
+  document.getElementById('smartScheduling').checked = currentSettings.smartScheduling ?? false;
+}
+
+document.getElementById('smartScheduling').addEventListener('change', async (e) => {
+  const checkbox = e.target;
+  const previous = currentSettings.smartScheduling ?? false;
+  const error = document.getElementById('smart-scheduling-error');
+  checkbox.disabled = true;
+  error.hidden = true;
+  try {
+    if (await saveImmediate({ smartScheduling: checkbox.checked }) === false) {
+      throw new Error('Smart scheduling change was not saved');
+    }
+  } catch (failure) {
+    console.error(failure);
+    currentSettings.smartScheduling = previous;
+    renderSmartScheduling();
+    error.textContent = L['settings.smartScheduling.error'] ??
+      'Could not save smart scheduling. Try again.';
+    error.hidden = false;
+  } finally {
+    checkbox.disabled = false;
+  }
+});
+
 document.getElementById('autoStart').addEventListener('change', async (e) => {
   const checkbox = e.target;
   const error = document.getElementById('autostart-error');
@@ -480,6 +506,7 @@ async function init() {
   setRange('interval', 'interval');
   setRange('fadeDuration', 'fadeDuration', 1);
 
+  renderSmartScheduling();
   document.getElementById('autoStart').checked = currentSettings.autoStart ?? true;
 
   await loadDictionaries();
@@ -521,6 +548,7 @@ async function refreshSettingsData() {
   if (revision !== settingsRevision) return;
   currentSettings = { ...settings, ...pendingSettingsPatch };
   renderAnswerDelay();
+  renderSmartScheduling();
   document.getElementById('autoStart').checked = currentSettings.autoStart ?? true;
   await loadDictionaries();
   await loadLearnedList();

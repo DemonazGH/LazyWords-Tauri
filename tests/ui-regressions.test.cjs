@@ -138,6 +138,44 @@ test('debounce preserves patches from different sliders', async () => {
   assert.deepEqual(saved, { fontSize: 28, interval: 5 });
 });
 
+test('smart scheduling is opt-in and reverts to the last saved state after failure', async () => {
+  const patches = [];
+  let finish;
+  const app = renderer('src/windows/settings/settings.js', {
+    saveSettings: patch => {
+      patches.push(patch);
+      return new Promise(resolve => { finish = resolve; });
+    },
+  });
+  const checkbox = app.elements.get('smartScheduling');
+  const change = () => checkbox.listeners.change({ target: checkbox });
+  app.run('renderSmartScheduling()');
+  assert.equal(checkbox.checked, false);
+
+  checkbox.checked = true;
+  const enabled = change();
+  assert.equal(checkbox.disabled, true);
+  await Promise.resolve();
+  await Promise.resolve();
+  finish(true);
+  await enabled;
+  assert.equal(checkbox.checked, true);
+  assert.equal(checkbox.disabled, false);
+
+  checkbox.checked = false;
+  const disabled = change();
+  await Promise.resolve();
+  await Promise.resolve();
+  finish(false);
+  await disabled;
+  assert.equal(checkbox.checked, true);
+  assert.equal(checkbox.disabled, false);
+  assert.equal(app.elements.get('smart-scheduling-error').hidden, false);
+  assert.deepEqual(JSON.parse(JSON.stringify(patches)), [
+    { smartScheduling: true }, { smartScheduling: false },
+  ]);
+});
+
 test('immediate save flushes pending sliders and newest value wins', async () => {
   const saved = {};
   const app = renderer('src/windows/settings/settings.js', {

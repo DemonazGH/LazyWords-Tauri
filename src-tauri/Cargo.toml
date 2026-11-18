@@ -30,6 +30,7 @@ csv = "1"
 png = "0.17"
 calamine = "0.22"
 rand = "0.8"
+sha2 = "0.10"
 chrono = "0.4"
 tokio = { version = "1.50.0", features = ["time", "rt", "rt-multi-thread", "macros"] }
 sys-locale = "0.3"

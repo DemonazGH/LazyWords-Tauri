@@ -115,13 +115,13 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
     if new_dict != old_dict {
         // After onboarding: dict was empty, now it has a value — show first card immediately
         if old_dict.is_empty() {
-            let entry = state.word_engine.lock().unwrap().get_random_word();
+            let (dict_id, entry) = crate::scheduler::select_next(&state);
             if let Some(word) = entry {
                 if let Some(window) = app.get_webview_window("main") {
                     let pos = state.settings.lock().unwrap().position.clone();
                     crate::reposition_window(&window, &pos);
                 }
-                crate::timer::emit_word(&app, &word, &new_dict);
+                crate::timer::emit_word(&app, &word, &dict_id);
                 // Tell timer to reset its interval — prevents it from also firing immediately
                 state.manual_trigger.notify_one();
             }
@@ -223,7 +223,7 @@ pub fn mark_learned(app: AppHandle, state: State<'_, AppState>, index: usize, di
         indices.push(index);
         engine.set_learned(indices.clone());
         save_learned_to_disk(&app, &learned);
-        let all_learned = engine.get_random_word().is_none();
+        let all_learned = engine.unlearned_cards().next().is_none();
         if all_learned { *state.all_learned.lock().unwrap() = true; }
         all_learned
     };

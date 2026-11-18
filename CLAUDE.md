@@ -56,6 +56,7 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 **AppState** (`state.rs`) is the central Mutex-protected state shared across all Rust modules:
 - `settings` – user config (intervals, answer delay, font size, position, language, autostart, first_launch)
 - `word_engine` – holds loaded dictionary + `HashSet<usize>` of learned card indices
+- `scheduling_history` - local exposure counts and last-shown times for opt-in smart scheduling
 - `stats_tracker` – daily/streak statistics
 - `learned` – `HashMap<dict_name, Vec<usize>>` persisted across sessions; both learned data and statistics must load successfully before AppState exists
 - `is_paused`, `all_learned`, `all_dicts_done` – runtime state
@@ -69,7 +70,7 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 - Checks fullscreen app detection on Windows (skips card if foreground app is fullscreen)
 - Records `shown` stat + emits `stats-updated` on every card shown
 - Interval wait prioritizes completion over manual Next and the one-second tick. Both waits register before checking pending completion and ignore stale notifications, including late wakeups after Restore.
-- When `get_random_word()` returns `None`: sets `all_learned = true`, emits `show-all-learned`, then scans all dictionaries for one with remaining cards — if found emits `show-switched-dict` + `dict-auto-switched` and resets; if not found emits `show-all-dicts-learned`
+- When selection returns no unlearned card: sets `all_learned = true`, emits `show-all-learned`, then scans all dictionaries for one with remaining cards — if found emits `show-switched-dict` + `dict-auto-switched` and resets; if not found emits `show-all-dicts-learned`
 
 **System tray** (`tray.rs`):
 - Tray icon with normal/dimmed (paused) states; tooltip "LazyWords"
@@ -129,6 +130,7 @@ discards stale async responses. Card state is invalidated on dictionary switches
 
 All data written to OS AppData directory via `tauri::path`:
 - `data/settings.json`, `data/stats.json`, `data/learned.json`
+- `data/progress.json` - versioned smart-scheduling history keyed by deck and a stable hash of term plus definition. Reordering does not transfer exposure history to a different card. Existing learned markers remain row-based; this is not a learned-data migration.
 - Learned data and statistics use `profile_data.rs`: only missing files default to empty. Invalid or unreadable files abort startup with a localized recovery dialog before dictionary fallback, onboarding, autostart or timers can write anything.
 - Learned and stats writes use a flushed, synced temp file in the same directory and atomic replacement. Failed writes are logged, leave the previous destination intact, and clean up their temp files. These are independent per-file saves, not a transaction across both files.
 - `data/my-words.csv` - Quick Add's app-managed deck. Writes atomically append cards without changing existing learned row indices.
@@ -141,6 +143,8 @@ All data written to OS AppData directory via `tauri::path`:
 - CSP disabled (`"csp": null`).
 - `show-word` includes the source dictionary ID with term/definition/index and a timing snapshot. Rust paces scheduling for answer delay plus show duration; only the renderer hides cards. Status cards are never delayed.
 - Answer delay is Off by default for new and existing profiles, or 1–5 seconds when enabled. Show duration is the time after the answer appears. Timing changes apply to the next card.
+- Smart scheduling is Off by default for new and existing profiles. When enabled, timer, keyboard and tray draws share weighted selection: unseen and less-practiced cards get more weight; recent cards get less. Immediate repeats are avoided when another distinct unlearned card is available. Learned cards remain excluded; the interval does not change.
+- Unknown-version or unreadable scheduling history is never overwritten. Selection uses in-memory history for the session and logs the load failure.
 
 - Default `active_dictionary` is `""` (empty) — timer sleeps until a dictionary is chosen.
 - Completion wakes the timer immediately, including when the last card was shown manually.
@@ -177,6 +181,7 @@ autostart and native MSI cleanup behavior; counts differ on other platforms.
 | `i18n.rs` | `set_locale("en"/"ru")` switches locale; `t()` returns correct string; `t()` returns raw template string with `{placeholder}` intact (substitution is done in JS); `current_locale` reflects `set_locale`; unknown key returns the key itself as fallback |
 | `settings.rs` | Default values match expected constants; round-trip JSON serialization/deserialization is lossless |
 | `profile_data.rs` | Missing files do not write; valid legacy progress and stats round-trip; invalid or unreadable files abort loading unchanged; atomic saves preserve originals on serialization/replacement failure; Windows read and replacement locks |
+| `scheduler.rs` | Weight ordering, learned exclusion, immediate-repeat avoidance, per-deck/card identity, reorder/restart persistence, preservation of unreadable or newer history |
 
 Additional Rust coverage includes card layout, completion timers, onboarding
 recovery, persistence failures, and Windows startup/cleanup. `npm test` runs

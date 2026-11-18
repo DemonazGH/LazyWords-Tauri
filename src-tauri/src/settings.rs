@@ -13,6 +13,8 @@ pub struct Settings {
     #[serde(default, deserialize_with = "deserialize_answer_delay")]
     pub answer_delay: u8,
     pub interval: f32,
+    #[serde(default)]
+    pub smart_scheduling: bool,
     pub fade_duration: f32,
     pub active_dictionary: String,
     pub auto_start: bool,
@@ -30,6 +32,7 @@ impl Default for Settings {
             show_duration: 4.0,
             answer_delay: 0,
             interval: 3.0,
+            smart_scheduling: false,
             fade_duration: 0.5,
             active_dictionary: String::new(),
             auto_start: true,
@@ -149,6 +152,16 @@ mod tests {
     }
 
     #[test]
+    fn smart_scheduling_defaults_off_and_can_be_persisted() {
+        let mut json = serde_json::to_value(Settings::default()).unwrap();
+        json.as_object_mut().unwrap().remove("smartScheduling");
+        assert!(!serde_json::from_value::<Settings>(json.clone()).unwrap().smart_scheduling);
+        json["smartScheduling"] = true.into();
+        let settings = serde_json::from_value::<Settings>(json).unwrap();
+        assert_eq!(serde_json::to_value(settings).unwrap()["smartScheduling"], true);
+    }
+
+    #[test]
     fn interrupted_first_launch_still_needs_onboarding() {
         let settings = Settings::default();
         let restored: Settings = serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
@@ -208,6 +221,7 @@ mod tests {
             assert_eq!(settings.msix_startup_initialized, startup_initialized);
             let mut restored = serde_json::to_value(settings).unwrap();
             assert_eq!(restored.as_object_mut().unwrap().remove("answerDelay"), Some(0.into()));
+            assert_eq!(restored.as_object_mut().unwrap().remove("smartScheduling"), Some(false.into()));
             if !startup_initialized {
                 restored.as_object_mut().unwrap().remove("msixStartupInitialized");
             }
