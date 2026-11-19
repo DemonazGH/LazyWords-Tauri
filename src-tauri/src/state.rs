@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::sync::Mutex;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::settings::Settings;
 use crate::stats::StatsTracker;
@@ -28,8 +28,9 @@ pub struct AppState {
 }
 
 pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> Result<AppState, crate::profile_data::LoadError> {
+    let bundled = app.path().resolve("dictionaries", tauri::path::BaseDirectory::Resource).ok();
     let crate::profile_data::ProfileData { learned, stats, .. } =
-        crate::profile_data::ProfileData::open(app_dir)?;
+        crate::profile_data::ProfileData::open(app_dir, bundled.as_deref())?;
 
     let engine = WordEngine::new();
     

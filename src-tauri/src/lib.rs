@@ -12,6 +12,7 @@ mod autostart;
 mod quick_add;
 mod profile_data;
 mod learned;
+mod bundled_migration;
 mod scheduler;
 
 #[cfg(all(test, windows))]
