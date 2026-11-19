@@ -233,11 +233,10 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
             let new_id = other.strip_prefix("dict:").unwrap_or("").to_string();
             if !new_id.is_empty() {
                 let state = app.state::<AppState>();
-                let old_dict = state.settings.lock().unwrap().active_dictionary.clone();
-                if new_id != old_dict {
+                let mut settings = state.settings.lock().unwrap();
+                if new_id != settings.active_dictionary {
                     if let Some(words) = crate::commands::load_dictionary_by_id(app, &new_id) {
                         {
-                            let mut settings = state.settings.lock().unwrap();
                             let learned = state.learned.lock().unwrap();
                             let mut engine = state.word_engine.lock().unwrap();
                             engine.load_dictionary(words);
@@ -249,8 +248,9 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                         *state.all_learned.lock().unwrap() = false;
                         *state.all_dicts_done.lock().unwrap() = false;
 
+                        let settings_val = serde_json::to_value(&*settings).unwrap_or_default();
+                        drop(settings);
                         use tauri::Emitter;
-                        let settings_val = serde_json::to_value(&*state.settings.lock().unwrap()).unwrap_or_default();
                         let _ = app.emit("update-settings", &settings_val);
                         let _ = app.emit("dict-auto-switched", serde_json::json!({ "newId": new_id }));
                     }

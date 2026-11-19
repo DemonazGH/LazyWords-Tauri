@@ -20,8 +20,11 @@ function renderer(file, api = {}) {
       },
       addEventListener(name, cb) { this.listeners[name] = cb; },
       setAttribute(name, value) { this.attributes[name] = value; },
+      removeAttribute(name) { delete this.attributes[name]; },
       focus() { this.focused = true; },
       showModal() { this.open = true; },
+      close() { this.open = false; },
+      replaceChildren(...children) { this.children = children; },
       appendChild(child) { this.children.push(child); if (child.selected) this.value = child.value; },
       set innerHTML(value) { this.children = []; this.value = ''; },
       getBoundingClientRect: () => ({ width: 500, height: 360 }),
@@ -137,6 +140,82 @@ test('debounce preserves patches from different sliders', async () => {
   app.run('saveDebounced({fontSize: 28}); saveDebounced({interval: 5});');
   await app.tick(200);
   assert.deepEqual(saved, { fontSize: 28, interval: 5 });
+});
+
+test('My Words edits target the displayed card ID and preserve a rejected draft', async () => {
+  let cards = [{ cardId: 'old-id', term: '<word>', definition: 'Old answer' }];
+  const saves = [];
+  let complete;
+  const app = renderer('src/windows/settings/settings.js', {
+    getMyWords: async () => cards,
+    editMyWord: (...args) => {
+      saves.push(args);
+      return new Promise((resolve, reject) => { complete = { resolve, reject }; });
+    },
+  });
+  const manager = app.elements.get('my-words');
+  manager.open = true;
+  await manager.listeners.toggle();
+  const list = app.elements.get('my-words-list');
+  const edit = () => list.children[0].children[1].listeners.click();
+  const dialog = app.elements.get('my-words-edit');
+  const answer = app.elements.get('my-words-definition');
+  const submit = () => app.elements.get('my-words-edit-form').listeners.submit({ preventDefault() {} });
+  assert.equal(list.children[0].children[0].children[0].textContent, '<word>');
+  edit();
+  assert.equal(answer.value, 'Old answer');
+  app.elements.get('my-words-cancel-edit').listeners.click();
+  assert.equal(dialog.open, false);
+  assert.deepEqual(saves, []);
+
+  edit();
+  answer.value = ' new answer ';
+  const first = submit();
+  await submit();
+  assert.deepEqual(saves, [['old-id', '<word>', 'new answer']]);
+  complete.reject('quickAdd.duplicate');
+  await first;
+  assert.match(app.elements.get('my-words-edit-status').textContent, /already in My Words/);
+  assert.equal(dialog.open, true);
+  assert.equal(answer.value, ' new answer ');
+  assert.equal(answer.readOnly, false);
+
+  const second = submit();
+  cards = [{ cardId: 'new-id', term: '<word>', definition: 'new answer' }];
+  complete.resolve();
+  await second;
+  assert.equal(dialog.open, false);
+  assert.equal(list.children[0].children[0].children[1].textContent, 'new answer');
+  assert.equal(app.elements.get('my-words-summary').focused, true);
+});
+
+test('My Words deletion only runs for the explicit confirm button', async () => {
+  let cards = [{ cardId: 'last-card', term: 'Last', definition: 'Answer, with punctuation' }];
+  const deletes = [];
+  const app = renderer('src/windows/settings/settings.js', {
+    getMyWords: async () => cards,
+    deleteMyWord: async id => { deletes.push(id); cards = []; },
+  });
+  const manager = app.elements.get('my-words');
+  manager.open = true;
+  await manager.listeners.toggle();
+  const list = app.elements.get('my-words-list');
+  list.children[0].children[2].listeners.click();
+  const dialog = app.elements.get('my-words-delete');
+  assert.equal(dialog.open, true);
+  assert.match(app.elements.get('my-words-delete-preview').textContent, /Answer, with punctuation/);
+  const submit = submitter =>
+    app.elements.get('my-words-delete-form').listeners.submit({ submitter, preventDefault() {} });
+  await submit({ value: 'cancel' });
+  dialog.close(); // Native method=dialog closes on Cancel.
+  await submit({ id: 'my-words-confirm-delete' });
+  list.children[0].children[2].listeners.click();
+  await submit(undefined);
+  assert.deepEqual(deletes, []);
+  await submit({ id: 'my-words-confirm-delete' });
+  assert.deepEqual(deletes, ['last-card']);
+  assert.equal(list.hidden, true);
+  assert.equal(dialog.open, false);
 });
 
 test('legacy marker review never links on close without a fresh confirmation', async () => {

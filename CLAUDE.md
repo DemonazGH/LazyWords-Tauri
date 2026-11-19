@@ -136,7 +136,7 @@ All data written to OS AppData directory via `tauri::path`:
 - Learned IDs and `data/progress.json` share the existing stable term-and-definition hash, scoped by dictionary ID. A reorder or deletion of other rows does not transfer a marker. Editing a term or definition creates a different ID; identical content in one deck shares an ID.
 - Learned data and statistics use `profile_data.rs`: only missing files default to empty. Invalid or unreadable files abort startup with a localized recovery dialog before dictionary fallback, onboarding, autostart or timers can write anything.
 - Learned and stats writes use a flushed, synced temp file in the same directory and atomic replacement. Failed writes are logged, leave the previous destination intact, and clean up their temp files. These are independent per-file saves, not a transaction across both files.
-- `data/my-words.csv` - Quick Add's app-managed deck. Writes atomically append cards and reapply existing learned IDs.
+- `data/my-words.csv` - Quick Add's app-managed deck. Settings can edit or delete individual cards by stable content ID, using the same atomic CSV replacement as Quick Add. A changed card has a new ID; edits and deletions leave existing learned markers (including pending legacy markers), practice history, and statistics intact. An empty deck stays available for Quick Add but is not selectable for practice.
 - `dictionaries/` — user-imported dictionaries
 
 ### Key Design Notes

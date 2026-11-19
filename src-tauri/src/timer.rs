@@ -127,66 +127,59 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
     // Wait for the CSS fade-out to complete before showing the next card
     tokio::time::sleep(Duration::from_secs_f32(fade_secs)).await;
 
-    // Try to find another dictionary with unlearned words
-    let all_dicts = crate::commands::get_all_dict_ids(app);
-    let learned_map = app.state::<AppState>().learned.lock().unwrap().clone();
-
-    let mut switched = false;
-    for dict_id in &all_dicts {
-        if *dict_id == current_dict_id { continue; }
-
-        if let Some(words) = crate::commands::load_dictionary_by_id(app, dict_id) {
-            let learned_set: std::collections::HashSet<&str> =
-                learned_map.ids(dict_id).iter().map(String::as_str).collect();
-            let has_unlearned = words.iter().any(|word| !learned_set.contains(crate::scheduler::card_id(word).as_str()));
-
-            if has_unlearned {
-                let new_dict_name = crate::commands::dictionary_display_name(app, dict_id);
-
-                // Update settings
-                {
-                    let app_state = app.state::<AppState>();
-                    let mut settings = app_state.settings.lock().unwrap();
-                    let learned = app_state.learned.lock().unwrap();
-                    let mut engine = app_state.word_engine.lock().unwrap();
-                    engine.load_dictionary(words);
-                    engine.set_learned_ids(learned.ids(dict_id));
-                    settings.active_dictionary = dict_id.clone();
-                    let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
-                    crate::settings::save_settings(&path, &settings);
-                }
-
-                // Notify settings window and card
-                let _ = app.emit("dict-auto-switched", serde_json::json!({ "newId": dict_id }));
-                let _ = app.emit("show-switched-dict", serde_json::json!({
-                    "dictName": new_dict_name,
-                    "headline": t(app, "card.switchedTo")
-                }));
-
-                let show_secs = app.state::<AppState>().settings.lock().unwrap().show_duration;
-                let fade_secs = app.state::<AppState>().settings.lock().unwrap().fade_duration;
-                tokio::time::sleep(Duration::from_secs_f32(show_secs)).await;
-                tokio::time::sleep(Duration::from_secs_f32(fade_secs)).await;
-
-                switched = true;
-                break;
-            }
+    let next_id = {
+        let state = app.state::<AppState>();
+        let mut settings = state.settings.lock().unwrap();
+        let learned = state.learned.lock().unwrap();
+        let mut engine = state.word_engine.lock().unwrap();
+        // The active deck may have changed while the completion card was visible.
+        if settings.active_dictionary != current_dict_id || engine.unlearned_cards().next().is_some() {
+            return false;
         }
-    }
 
-    if !switched {
-        // Every dictionary is fully learned — enter idle state
-        *app.state::<AppState>().all_dicts_done.lock().unwrap() = true;
+        let next = crate::commands::get_all_dict_ids(app).into_iter()
+            .filter(|id| id != &current_dict_id)
+            .find_map(|id| {
+                let words = crate::commands::load_dictionary_by_id(app, &id)?;
+                let ids: std::collections::HashSet<_> =
+                    learned.ids(&id).iter().map(String::as_str).collect();
+                words.iter().any(|word| !ids.contains(crate::scheduler::card_id(word).as_str()))
+                    .then_some((id, words))
+            });
+        if let Some((id, words)) = next {
+            engine.load_dictionary(words);
+            engine.set_learned_ids(learned.ids(&id));
+            settings.active_dictionary = id.clone();
+            let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
+            crate::settings::save_settings(&path, &settings);
+            Some(id)
+        } else {
+            *state.all_dicts_done.lock().unwrap() = true;
+            None
+        }
+    };
 
+    if let Some(dict_id) = next_id {
+        let dict_name = crate::commands::dictionary_display_name(app, &dict_id);
+        let _ = app.emit("dict-auto-switched", serde_json::json!({ "newId": dict_id }));
+        let _ = app.emit("show-switched-dict", serde_json::json!({
+            "dictName": dict_name,
+            "headline": t(app, "card.switchedTo")
+        }));
+        let show_secs = app.state::<AppState>().settings.lock().unwrap().show_duration;
+        let fade_secs = app.state::<AppState>().settings.lock().unwrap().fade_duration;
+        tokio::time::sleep(Duration::from_secs_f32(show_secs)).await;
+        tokio::time::sleep(Duration::from_secs_f32(fade_secs)).await;
+        true
+    } else {
         let _ = app.emit("show-all-dicts-learned", serde_json::json!({
             "headline": t(app, "card.allDictsLearned"),
             "sub": t(app, "card.restoreInSettings")
         }));
         let show_secs = app.state::<AppState>().settings.lock().unwrap().show_duration;
         tokio::time::sleep(Duration::from_secs_f32(show_secs)).await;
+        false
     }
-
-    switched
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────

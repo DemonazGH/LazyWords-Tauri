@@ -82,6 +82,39 @@
     </div>
 
     <div class="group">
+      <details id="my-words">
+        <summary id="my-words-summary" data-i18n="myWords.manage">Manage My Words</summary>
+        <ul id="my-words-list" hidden></ul>
+        <p id="my-words-status" class="hint" role="status"></p>
+      </details>
+      <dialog id="my-words-edit" class="settings-dialog" aria-labelledby="my-words-edit-title" aria-describedby="my-words-edit-help">
+        <h2 id="my-words-edit-title" data-i18n="myWords.editTitle">Edit card</h2>
+        <p id="my-words-edit-help" class="hint" data-i18n="myWords.editHelp">Changing the text creates a new card. Progress stays with the original text.</p>
+        <form id="my-words-edit-form" method="dialog" aria-labelledby="my-words-edit-title">
+          <label for="my-words-term" data-i18n="quickAdd.term">Term</label>
+          <input id="my-words-term" name="term" aria-describedby="my-words-edit-status" required autofocus>
+          <label for="my-words-definition" data-i18n="quickAdd.definition">Definition or translation</label>
+          <textarea id="my-words-definition" name="definition" rows="4" aria-describedby="my-words-edit-status" required></textarea>
+          <p id="my-words-edit-status" class="hint" role="status"></p>
+          <div class="dialog-actions">
+            <button type="button" id="my-words-cancel-edit" class="btn-secondary" data-i18n="quickAdd.cancel">Cancel</button>
+            <button type="submit" id="my-words-save" class="btn-secondary" data-i18n="myWords.save">Save changes</button>
+          </div>
+        </form>
+      </dialog>
+      <dialog id="my-words-delete" class="settings-dialog" aria-labelledby="my-words-delete-title" aria-describedby="my-words-delete-help">
+        <h2 id="my-words-delete-title" data-i18n="myWords.deleteTitle">Delete card from My Words?</h2>
+        <p id="my-words-delete-preview" class="my-words-preview"></p>
+        <p id="my-words-delete-help" class="hint" data-i18n="myWords.deleteHelp">This removes the card, not its past statistics.</p>
+        <p id="my-words-delete-status" class="hint" role="status"></p>
+        <form id="my-words-delete-form" class="dialog-actions" method="dialog" aria-labelledby="my-words-delete-title">
+          <button type="submit" class="btn-secondary" value="cancel" autofocus data-i18n="quickAdd.cancel">Cancel</button>
+          <button type="submit" id="my-words-confirm-delete" class="btn-secondary" data-i18n="myWords.delete">Delete</button>
+        </form>
+      </dialog>
+    </div>
+
+    <div class="group">
       <div class="learned-header">
         <label class="group-title"><span data-i18n="settings.learned">Learned words</span> (<span id="learned-count">0</span>)</label>
         <button id="btn-restore-all" class="btn-text btn-restore-all" style="display:none" data-i18n="settings.learned.restoreAll">Restore all</button>
@@ -95,7 +128,7 @@
         <button id="btn-review-legacy" class="btn-secondary" type="button" data-i18n="learned.legacy.review" hidden>Review older markers</button>
       </div>
       <p id="learned-status" class="hint" role="status"></p>
-      <dialog id="learned-legacy-dialog" aria-labelledby="learned-legacy-title" aria-describedby="learned-legacy-description">
+      <dialog id="learned-legacy-dialog" class="settings-dialog" aria-labelledby="learned-legacy-title" aria-describedby="learned-legacy-description">
         <h2 id="learned-legacy-title" data-i18n="learned.legacy.review">Review older markers</h2>
         <p id="learned-legacy-description" data-i18n="learned.legacy.warning">Link these markers only if this dictionary is in the exact order it had when you marked the cards. If it was edited, reordered, or you are unsure, leave them pending.</p>
         <form method="dialog">
