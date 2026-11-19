@@ -15,6 +15,7 @@ pub struct WordWithIndex {
     #[serde(flatten)]
     pub entry: WordEntry,
     pub index: usize,
+    pub card_id: String,
 }
 
 pub struct WordEngine {
@@ -37,8 +38,19 @@ impl WordEngine {
         self.dictionary = words;
     }
 
+    #[cfg(test)]
     pub fn set_learned(&mut self, indices: Vec<usize>) {
         self.learned_indices = indices.into_iter().collect();
+    }
+
+    pub fn set_learned_ids(&mut self, ids: &[String]) {
+        let ids: HashSet<_> = ids.iter().collect();
+        self.learned_indices = self.card_ids.iter().enumerate()
+            .filter_map(|(index, id)| ids.contains(id).then_some(index)).collect();
+    }
+
+    pub fn card_ids(&self) -> &[String] {
+        &self.card_ids
     }
 
     pub fn unlearned_cards(&self) -> impl Iterator<Item = (usize, &WordEntry)> {
@@ -60,6 +72,7 @@ impl WordEngine {
         Some(WordWithIndex {
             entry: (*entry).clone(),
             index: *index,
+            card_id: self.card_ids[*index].clone(),
         })
     }
 }
@@ -93,6 +106,19 @@ mod tests {
             assert_ne!(word.entry.term, "hello");
             assert_eq!(word.index, 1);
         }
+    }
+
+    #[test]
+    fn stable_learned_id_tracks_a_card_after_reorder_and_deleting_another_row() {
+        let mut engine = make_engine(&[("run", "operate"), ("run", "move quickly"), ("other", "other")]);
+        let id = engine.card_id(0).clone();
+        let distinct = engine.card_id(1).clone();
+        assert_ne!(id, distinct);
+        let reversed = [engine.dictionary[1].clone(), engine.dictionary[0].clone()];
+        engine.load_dictionary(reversed.to_vec());
+        engine.set_learned_ids(&[id]);
+        assert_eq!(engine.learned_indices, HashSet::from([1]));
+        assert_eq!(engine.get_random_word().unwrap().card_id, distinct);
     }
 
     #[test]

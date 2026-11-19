@@ -21,6 +21,7 @@ function renderer(file, api = {}) {
       addEventListener(name, cb) { this.listeners[name] = cb; },
       setAttribute(name, value) { this.attributes[name] = value; },
       focus() { this.focused = true; },
+      showModal() { this.open = true; },
       appendChild(child) { this.children.push(child); if (child.selected) this.value = child.value; },
       set innerHTML(value) { this.children = []; this.value = ''; },
       getBoundingClientRect: () => ({ width: 500, height: 360 }),
@@ -138,6 +139,33 @@ test('debounce preserves patches from different sliders', async () => {
   assert.deepEqual(saved, { fontSize: 28, interval: 5 });
 });
 
+test('legacy marker review never links on close without a fresh confirmation', async () => {
+  const calls = [];
+  let response = { dictId: 'deck', words: [], pendingTotal: 3, pendingHere: 2, orderToken: 'order-a' };
+  const app = renderer('src/windows/settings/settings.js', {
+    getLearnedList: async () => response,
+    resolveLegacyLearned: async (...args) => { calls.push(args); return 0; },
+  });
+  app.run('currentSettings.activeDictionary = "deck"');
+  await app.run('loadLearnedList()');
+  const dialog = app.elements.get('learned-legacy-dialog');
+  const button = app.elements.get('btn-review-legacy');
+  assert.match(app.elements.get('learned-legacy-count').textContent, /3 \(2 in this dictionary\)/);
+  button.listeners.click();
+  assert.equal(dialog.open, true);
+  await dialog.listeners.close();
+  assert.deepEqual(calls, []);
+
+  button.listeners.click();
+  response = { ...response, orderToken: 'order-b' };
+  await app.run('loadLearnedList()');
+  dialog.returnValue = 'confirm';
+  await dialog.listeners.close();
+  assert.deepEqual(calls, [['deck', 'order-a']], 'only the reviewed order can be linked');
+  assert.equal(dialog.returnValue, '');
+  assert.match(app.elements.get('learned-status').textContent, /remain pending/);
+});
+
 test('smart scheduling is opt-in and reverts to the last saved state after failure', async () => {
   const patches = [];
   let finish;
@@ -215,7 +243,7 @@ test('switching dictionary invalidates the displayed card before mark-known', as
   }
   const app = renderer('src/windows/card/card.js', api);
   await app.run('init()');
-  await callbacks.onShowWord({ term: 'old card', definition: 'old definition', index: 0, dictId: 'old' });
+  await callbacks.onShowWord({ term: 'old card', definition: 'old definition', cardId: 'old-id', dictId: 'old' });
   await callbacks.onUpdateSettings({ activeDictionary: 'new' });
   callbacks.onMarkKnown();
   assert.equal(marked.length, 0, 'old index must not be submitted for the new dictionary');
@@ -332,15 +360,15 @@ test('card grows to measured content and submits source dictionary only while vi
   }
   const app = renderer('src/windows/card/card.js', api);
   await app.run('init()');
-  await callbacks.onShowWord({ term: 'long card', definition: 'long text', index: 1, dictId: 'old' });
+  await callbacks.onShowWord({ term: 'long card', definition: 'long text', cardId: 'long-id', dictId: 'old' });
   assert.deepEqual(heights, [360]);
   callbacks.onMarkKnown();
   callbacks.onMarkKnown();
-  assert.deepEqual(marked, [[1, 'old']]);
+  assert.deepEqual(marked, [['long-id', 'old']]);
   callbacks.onDictAutoSwitched({ newId: 'new' });
-  await callbacks.onShowWord({ term: 'new card', definition: 'new text', index: 0, dictId: 'new' });
+  await callbacks.onShowWord({ term: 'new card', definition: 'new text', cardId: 'new-id', dictId: 'new' });
   callbacks.onMarkKnown();
-  assert.deepEqual(marked, [[1, 'old'], [0, 'new']]);
+  assert.deepEqual(marked, [['long-id', 'old'], ['new-id', 'new']]);
 });
 
 test('answer delay displays a localized value and saves the number of seconds', async () => {
@@ -376,7 +404,7 @@ async function delayedCard(apiOverrides = {}) {
   return {
     ...app, callbacks,
     show: (def, answerDelay = 2) => callbacks.onShowWord({
-      term: def, definition: def, index: 1, dictId: 'deck', showDuration: 4, answerDelay,
+      term: def, definition: def, cardId: 'card-id', dictId: 'deck', showDuration: 4, answerDelay,
     }),
     visible: () => app.elements.get('card').classList.contains('visible'),
     pending: () => app.elements.get('definition').classList.contains('answer-pending'),
@@ -421,7 +449,7 @@ test('mark-known and dictionary changes cancel pending reveals; status cards do 
   const app = await delayedCard({ markLearned: (...args) => marked.push(args) });
   await app.show('learned early');
   app.callbacks.onMarkKnown();
-  assert.deepEqual(marked, [[1, 'deck']]);
+  assert.deepEqual(marked, [['card-id', 'deck']]);
   await app.tick(2000);
   assert.equal(app.visible(), false);
   assert.equal(app.pending(), true, 'answer stays hidden when the card fades');

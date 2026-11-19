@@ -11,6 +11,7 @@ mod card_layout;
 mod autostart;
 mod quick_add;
 mod profile_data;
+mod learned;
 mod scheduler;
 
 #[cfg(all(test, windows))]
@@ -226,11 +227,10 @@ pub fn run() {
                 }
             };
             if let Some(words) = commands::load_dictionary_by_id(&app.handle(), &active_dict) {
+                let learned = state.learned.lock().unwrap();
                 let mut engine = state.word_engine.lock().unwrap();
                 engine.load_dictionary(words);
-                let learned_indices = state.learned.lock().unwrap()
-                    .get(&active_dict).cloned().unwrap_or_default();
-                engine.set_learned(learned_indices);
+                engine.set_learned_ids(learned.ids(&active_dict));
             }
 
             let first_launch = state.settings.lock().unwrap().needs_onboarding();
@@ -462,6 +462,7 @@ pub fn run() {
             commands::mark_learned,
             commands::remove_learned,
             commands::clear_learned,
+            commands::resolve_legacy_learned,
             commands::get_dictionaries,
             commands::import_dictionary,
             commands::delete_dictionary,

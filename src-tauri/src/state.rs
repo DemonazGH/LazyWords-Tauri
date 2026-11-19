@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Mutex;
 use tauri::AppHandle;
@@ -10,7 +9,7 @@ use crate::word_engine::WordEngine;
 pub struct AppState {
     pub settings: Mutex<Settings>,
     pub stats_tracker: Mutex<StatsTracker>,
-    pub learned: Mutex<HashMap<String, Vec<usize>>>,
+    pub learned: Mutex<crate::learned::Learned>,
     pub word_engine: Mutex<WordEngine>,
     pub scheduling_history: Mutex<crate::scheduler::SchedulingHistory>,
     pub quick_add_draft: Mutex<Option<crate::quick_add::Draft>>,
@@ -29,8 +28,8 @@ pub struct AppState {
 }
 
 pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> Result<AppState, crate::profile_data::LoadError> {
-    let crate::profile_data::ProfileData { learned, stats } =
-        crate::profile_data::ProfileData::load(app_dir)?;
+    let crate::profile_data::ProfileData { learned, stats, .. } =
+        crate::profile_data::ProfileData::open(app_dir)?;
 
     let engine = WordEngine::new();
     

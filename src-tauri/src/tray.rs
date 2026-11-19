@@ -216,12 +216,8 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
             }
         }
         "quit" => {
-            // Persist state before exiting
+            // Learned changes are already saved before becoming visible.
             let app_state = app.state::<AppState>();
-            {
-                let learned = app_state.learned.lock().unwrap();
-                crate::commands::save_learned_to_disk(app, &learned);
-            }
             {
                 let tracker = app_state.stats_tracker.lock().unwrap();
                 crate::commands::save_stats_to_disk(app, &tracker.stats);
@@ -242,11 +238,10 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                     if let Some(words) = crate::commands::load_dictionary_by_id(app, &new_id) {
                         {
                             let mut settings = state.settings.lock().unwrap();
-                            let learned_indices = state.learned.lock().unwrap()
-                                .get(&new_id).cloned().unwrap_or_default();
+                            let learned = state.learned.lock().unwrap();
                             let mut engine = state.word_engine.lock().unwrap();
                             engine.load_dictionary(words);
-                            engine.set_learned(learned_indices);
+                            engine.set_learned_ids(learned.ids(&new_id));
                             settings.active_dictionary = new_id.clone();
                             let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
                             crate::settings::save_settings(&path, &settings);

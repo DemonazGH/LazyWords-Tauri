@@ -96,7 +96,7 @@ pub fn emit_word(app: &AppHandle, word: &WordWithIndex, dict_id: &str) -> Durati
     let _ = app.emit("show-word", serde_json::json!({
         "term": word.entry.term,
         "definition": word.entry.definition,
-        "index": word.index,
+        "cardId": word.card_id,
         "dictId": dict_id,
         "showDuration": show_duration,
         "answerDelay": answer_delay
@@ -136,9 +136,9 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
         if *dict_id == current_dict_id { continue; }
 
         if let Some(words) = crate::commands::load_dictionary_by_id(app, dict_id) {
-            let learned_set: std::collections::HashSet<usize> =
-                learned_map.get(dict_id).cloned().unwrap_or_default().into_iter().collect();
-            let has_unlearned = words.iter().enumerate().any(|(i, _)| !learned_set.contains(&i));
+            let learned_set: std::collections::HashSet<&str> =
+                learned_map.ids(dict_id).iter().map(String::as_str).collect();
+            let has_unlearned = words.iter().any(|word| !learned_set.contains(crate::scheduler::card_id(word).as_str()));
 
             if has_unlearned {
                 let new_dict_name = crate::commands::dictionary_display_name(app, dict_id);
@@ -147,10 +147,10 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
                 {
                     let app_state = app.state::<AppState>();
                     let mut settings = app_state.settings.lock().unwrap();
-                    let learned_indices = learned_map.get(dict_id).cloned().unwrap_or_default();
+                    let learned = app_state.learned.lock().unwrap();
                     let mut engine = app_state.word_engine.lock().unwrap();
                     engine.load_dictionary(words);
-                    engine.set_learned(learned_indices);
+                    engine.set_learned_ids(learned.ids(dict_id));
                     settings.active_dictionary = dict_id.clone();
                     let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
                     crate::settings::save_settings(&path, &settings);

@@ -303,16 +303,63 @@ let learnedShowAll = false;
 let restoreAllConfirming = false;
 let restoreAllTimer = null;
 let learnedListRequest = 0;
+let learnedDeckId = null;
+let legacyReview = null;
+let legacyConfirmation = null;
 
 async function loadLearnedList() {
   const request = ++learnedListRequest;
-  const { dictId, words } = await window.api.getLearnedList();
+  const { dictId, words, pendingTotal = 0, pendingHere = 0, orderToken } = await window.api.getLearnedList();
   if (request !== learnedListRequest || dictId !== currentSettings.activeDictionary) return;
   allLearnedWords = [...words].reverse(); // newest first
+  learnedDeckId = dictId;
+  legacyReview = { dictId, pendingTotal, pendingHere, orderToken };
   renderLearnedList();
 }
 
+function renderLegacyReview() {
+  const { pendingTotal = 0, pendingHere = 0 } = legacyReview ?? {};
+  document.getElementById('learned-legacy').hidden = pendingTotal === 0;
+  document.getElementById('btn-review-legacy').hidden = pendingHere === 0;
+  document.getElementById('learned-legacy-count').textContent =
+    (L['learned.legacy.pending'] ?? 'Older markers pending: {total} ({deck} in this dictionary). They do not hide cards until linked.')
+      .replace('{total}', pendingTotal).replace('{deck}', pendingHere);
+}
+
+function learnedStatus(key, fallback) {
+  document.getElementById('learned-status').textContent = L[key] ?? fallback;
+}
+
+const legacyDialog = document.getElementById('learned-legacy-dialog');
+document.getElementById('btn-review-legacy').addEventListener('click', () => {
+  if (!legacyReview?.orderToken || legacyReview.dictId !== currentSettings.activeDictionary) return;
+  legacyConfirmation = legacyReview;
+  legacyDialog.returnValue = '';
+  legacyDialog.showModal();
+});
+
+legacyDialog.addEventListener('close', async () => {
+  const review = legacyConfirmation;
+  legacyConfirmation = null;
+  const confirmed = legacyDialog.returnValue === 'confirm';
+  legacyDialog.returnValue = '';
+  if (!confirmed || !review) return;
+  try {
+    const linked = await window.api.resolveLegacyLearned(review.dictId, review.orderToken);
+    if (linked > 0) {
+      learnedStatus('learned.legacy.linked', 'Matched older markers were linked. Any unmatched markers remain pending.');
+    } else {
+      learnedStatus('learned.legacy.notLinked', 'No markers were linked. They remain pending.');
+    }
+    await loadLearnedList();
+  } catch (error) {
+    console.error(error);
+    learnedStatus('learned.legacy.notLinked', 'No markers were linked. They remain pending.');
+  }
+});
+
 function renderLearnedList() {
+  renderLegacyReview();
   const list    = document.getElementById('learned-list');
   const empty   = document.getElementById('learned-empty');
   const count   = document.getElementById('learned-count');
@@ -357,18 +404,18 @@ function renderLearnedList() {
   list.innerHTML = '';
 
   const restoreLabel = L['settings.learned.restore'] ?? 'Restore';
-  visible.forEach(({ term, definition, index }) => {
+  const sourceDeck = learnedDeckId;
+  visible.forEach(({ term, definition, cardId }) => {
     const li = document.createElement('li');
     li.innerHTML = `
       <div class="word-pair">
         <span class="term">${escHtml(term)}</span>
         <span class="definition">${escHtml(definition)}</span>
       </div>
-      <button class="btn-restore" data-index="${index}">${escHtml(restoreLabel)}</button>
+      <button class="btn-restore" type="button">${escHtml(restoreLabel)}</button>
     `;
-    li.querySelector('.btn-restore').addEventListener('click', async (e) => {
-      await window.api.removeLearned(parseInt(e.target.dataset.index, 10));
-      await loadLearnedList();
+    li.querySelector('.btn-restore').addEventListener('click', async () => {
+      await restoreLearned(() => window.api.removeLearned(cardId, sourceDeck));
     });
     list.appendChild(li);
   });
@@ -390,10 +437,23 @@ document.getElementById('btn-show-all').addEventListener('click', () => {
   renderLearnedList();
 });
 
+async function restoreLearned(action) {
+  try {
+    if (!await action()) throw new Error('Learned marker was not restored');
+    learnedStatus('', '');
+    await loadLearnedList();
+  } catch (error) {
+    console.error(error);
+    learnedStatus('learned.restoreFailed', 'Could not restore learned cards. Refresh Settings and try again.');
+  }
+}
+
+let restoreAllDeck = null;
 document.getElementById('btn-restore-all').addEventListener('click', async () => {
   const btn = document.getElementById('btn-restore-all');
   if (!restoreAllConfirming) {
     restoreAllConfirming = true;
+    restoreAllDeck = learnedDeckId;
     btn.textContent = L['settings.learned.restoreAllConfirm'] ?? 'Really restore all?';
     btn.classList.add('confirming');
     clearTimeout(restoreAllTimer);
@@ -408,9 +468,8 @@ document.getElementById('btn-restore-all').addEventListener('click', async () =>
   restoreAllConfirming = false;
   btn.textContent = L['settings.learned.restoreAll'] ?? 'Restore all';
   btn.classList.remove('confirming');
-  await window.api.clearLearned();
+  await restoreLearned(() => window.api.clearLearned(restoreAllDeck));
   learnedShowAll = false;
-  await loadLearnedList();
 });
 
 function escHtml(str) {

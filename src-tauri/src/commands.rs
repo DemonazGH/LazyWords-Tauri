@@ -2,7 +2,8 @@ use tauri::{AppHandle, State, Manager, Emitter};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use crate::learned::{Learned, FILE_NAME};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::state::AppState;
@@ -10,11 +11,14 @@ use crate::settings::Settings;
 
 // ── Persistence helpers ──────────────────────────────────────────────────────
 
-pub fn save_learned_to_disk(app: &AppHandle, learned: &HashMap<String, Vec<usize>>) {
-    let path = app.path().app_data_dir().unwrap().join("data").join("learned.json");
-    if let Err(error) = crate::profile_data::save_json(&path, learned) {
+fn commit_learned(app: &AppHandle, current: &mut Learned, next: Learned) -> bool {
+    let path = app.path().app_data_dir().unwrap().join("data").join(FILE_NAME);
+    if let Err(error) = crate::profile_data::save_json(&path, &next) {
         eprintln!("Failed to save learned progress ({}): {error}", path.display());
+        return false;
     }
+    *current = next;
+    true
 }
 
 pub fn save_stats_to_disk(app: &AppHandle, stats: &crate::stats::Stats) {
@@ -60,7 +64,13 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
     }
 
     let selected_words = if current.active_dictionary != old_dict {
-        load_dictionary_by_id(&app, &current.active_dictionary)
+        match load_dictionary_by_id(&app, &current.active_dictionary) {
+            Some(words) if !words.is_empty() => Some(words),
+            _ => {
+                *current = previous;
+                return false;
+            }
+        }
     } else {
         None
     };
@@ -87,11 +97,10 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
     let settings_json = serde_json::to_value(&*current).unwrap_or(Value::Null);
     if new_dict != old_dict {
         if let Some(words) = selected_words {
-            let learned_indices = state.learned.lock().unwrap()
-                .get(&new_dict).cloned().unwrap_or_default();
+            let learned = state.learned.lock().unwrap();
             let mut engine = state.word_engine.lock().unwrap();
             engine.load_dictionary(words);
-            engine.set_learned(learned_indices);
+            engine.set_learned_ids(learned.ids(&new_dict));
         }
         *state.all_learned.lock().unwrap() = false;
         *state.all_dicts_done.lock().unwrap() = false;
@@ -165,12 +174,7 @@ pub fn get_locale(state: State<'_, AppState>) -> Value {
 #[tauri::command]
 pub fn get_stats(state: State<'_, AppState>) -> Value {
     let stats = state.stats_tracker.lock().unwrap();
-    let settings = state.settings.lock().unwrap();
-    let learned = state.learned.lock().unwrap();
     let engine = state.word_engine.lock().unwrap();
-
-    let dict_id = &settings.active_dictionary;
-    let learned_count = learned.get(dict_id).map(|v| v.len()).unwrap_or(0);
 
     let today_key = crate::stats::StatsTracker::today();
     let today = stats.stats.days.get(&today_key).cloned().unwrap_or_default();
@@ -179,7 +183,7 @@ pub fn get_stats(state: State<'_, AppState>) -> Value {
         "today": today,
         "streak": stats.get_streak(),
         "last7": stats.get_last_7_days(),
-        "learnedCount": learned_count,
+        "learnedCount": engine.learned_indices.len(),
         "totalWords": engine.dictionary.len()
     })
 }
@@ -193,135 +197,102 @@ pub fn get_learned_list(state: State<'_, AppState>) -> Value {
     let learned = state.learned.lock().unwrap();
     let engine = state.word_engine.lock().unwrap();
 
-    let mut words = Vec::new();
-    if let Some(indices) = learned.get(&dict_id) {
-        for &idx in indices {
-            if let Some(w) = engine.dictionary.get(idx) {
-                words.push(serde_json::json!({
-                    "term": w.term,
-                    "definition": w.definition,
-                    "index": idx
-                }));
-            }
-        }
-    }
-
-    serde_json::json!({ "dictId": dict_id, "words": words })
+    let indexes: HashMap<_, _> = engine.card_ids().iter().enumerate()
+        .map(|(index, id)| (id.as_str(), index)).collect();
+    let words: Vec<_> = learned.ids(&dict_id).iter().filter_map(|id| {
+        let word = &engine.dictionary[*indexes.get(id.as_str())?];
+        Some(serde_json::json!({ "term": word.term, "definition": word.definition, "cardId": id }))
+    }).collect();
+    let pending_here = learned.pending(&dict_id).len();
+    serde_json::json!({
+        "dictId": dict_id, "words": words,
+        "pendingTotal": learned.pending_count(),
+        "pendingHere": pending_here,
+        "orderToken": (pending_here != 0).then(|| Learned::order_token(engine.card_ids()))
+    })
 }
 
 #[tauri::command]
-pub fn mark_learned(app: AppHandle, state: State<'_, AppState>, index: usize, dict_id: String) -> bool {
-    let all_learned_now = {
+pub fn mark_learned(app: AppHandle, state: State<'_, AppState>, card_id: String, dict_id: String) -> bool {
+    let all_learned = {
         let settings = state.settings.lock().unwrap();
         let mut learned = state.learned.lock().unwrap();
         let mut engine = state.word_engine.lock().unwrap();
-        if !can_mark_learned(&settings.active_dictionary, &dict_id, index, engine.dictionary.len(),
-            learned.get(&dict_id).map(Vec::as_slice).unwrap_or_default()) {
+        if settings.active_dictionary != dict_id || dict_id.is_empty() || !engine.card_ids().contains(&card_id) {
             return false;
         }
-        let indices = learned.entry(dict_id.clone()).or_default();
-        indices.push(index);
-        engine.set_learned(indices.clone());
-        save_learned_to_disk(&app, &learned);
+        let mut next = learned.clone();
+        if !next.mark(&dict_id, &card_id) || !commit_learned(&app, &mut learned, next) {
+            return false;
+        }
+        engine.set_learned_ids(learned.ids(&dict_id));
         let all_learned = engine.unlearned_cards().next().is_none();
-        if all_learned { *state.all_learned.lock().unwrap() = true; }
+        *state.all_learned.lock().unwrap() = all_learned;
         all_learned
     };
-
-    // Record learned stat and persist
     {
         let mut tracker = state.stats_tracker.lock().unwrap();
         tracker.record_learned();
         save_stats_to_disk(&app, &tracker.stats);
     }
-
     let _ = app.emit("stats-updated", ());
-
-    // Signal timer to handle the all-learned flow immediately
-    if all_learned_now {
-        state.all_learned_notify.notify_one();
-    }
-
-    true
-}
-
-fn can_mark_learned(active: &str, source: &str, index: usize, count: usize, learned: &[usize]) -> bool {
-    !source.is_empty() && active == source && index < count && !learned.contains(&index)
-}
-
-#[cfg(test)]
-mod mark_learned_tests {
-    use super::can_mark_learned;
-
-    #[test]
-    fn accepts_unlearned_index_from_active_dictionary() {
-        assert!(can_mark_learned("a", "a", 1, 2, &[0]));
-    }
-
-    #[test]
-    fn rejects_old_dictionary_invalid_index_and_duplicate() {
-        assert!(!can_mark_learned("b", "a", 0, 2, &[]));
-        assert!(!can_mark_learned("a", "a", 2, 2, &[]));
-        assert!(!can_mark_learned("a", "a", 0, 2, &[0]));
-        assert!(!can_mark_learned("", "", 0, 2, &[]));
-    }
-}
-
-#[tauri::command]
-pub fn remove_learned(app: AppHandle, state: State<'_, AppState>, index: usize) -> bool {
-    let dict_id = state.settings.lock().unwrap().active_dictionary.clone();
-
-    {
-        let mut learned = state.learned.lock().unwrap();
-        if let Some(indices) = learned.get_mut(&dict_id) {
-            indices.retain(|&i| i != index);
-        }
-        save_learned_to_disk(&app, &learned);
-        let learned_indices = learned.get(&dict_id).cloned().unwrap_or_default();
-        state.word_engine.lock().unwrap().set_learned(learned_indices);
-    }
-
-    {
-        let mut tracker = state.stats_tracker.lock().unwrap();
-        tracker.decrement_learned();
-        save_stats_to_disk(&app, &tracker.stats);
-    }
-
-    // Words are available again — clear both flags
-    *state.all_learned.lock().unwrap() = false;
-    *state.all_dicts_done.lock().unwrap() = false;
-
-    let _ = app.emit("stats-updated", ());
+    if all_learned { state.all_learned_notify.notify_one(); }
     true
 }
 
 #[tauri::command]
-pub fn clear_learned(app: AppHandle, state: State<'_, AppState>) -> bool {
-    let dict_id = state.settings.lock().unwrap().active_dictionary.clone();
+pub fn remove_learned(app: AppHandle, state: State<'_, AppState>, dict_id: String, card_id: String) -> bool {
+    restore_markers(&app, &state, &dict_id, Some(&card_id))
+}
 
+#[tauri::command]
+pub fn clear_learned(app: AppHandle, state: State<'_, AppState>, dict_id: String) -> bool {
+    restore_markers(&app, &state, &dict_id, None)
+}
+
+fn restore_markers(app: &AppHandle, state: &AppState, dict_id: &str, only_id: Option<&str>) -> bool {
     let count = {
+        let settings = state.settings.lock().unwrap();
+        if dict_id.is_empty() || settings.active_dictionary != dict_id { return false; }
         let mut learned = state.learned.lock().unwrap();
-        let count = learned.get(&dict_id).map(|v| v.len()).unwrap_or(0);
-        if let Some(indices) = learned.get_mut(&dict_id) {
-            indices.clear();
-        }
-        save_learned_to_disk(&app, &learned);
-        state.word_engine.lock().unwrap().set_learned(Vec::new());
+        let mut engine = state.word_engine.lock().unwrap();
+        let ids: HashSet<&str> = engine.card_ids().iter().map(String::as_str)
+            .filter(|id| only_id.is_none_or(|selected| selected == *id)).collect();
+        let mut next = learned.clone();
+        let count = next.restore(dict_id, &ids);
+        if count == 0 || !commit_learned(app, &mut learned, next) { return false; }
+        engine.set_learned_ids(learned.ids(dict_id));
+        *state.all_learned.lock().unwrap() = false;
+        *state.all_dicts_done.lock().unwrap() = false;
         count
     };
-
     {
         let mut tracker = state.stats_tracker.lock().unwrap();
-        for _ in 0..count {
-            tracker.decrement_learned();
-        }
-        save_stats_to_disk(&app, &tracker.stats);
+        for _ in 0..count { tracker.decrement_learned(); }
+        save_stats_to_disk(app, &tracker.stats);
     }
-
-    *state.all_learned.lock().unwrap() = false;
-    *state.all_dicts_done.lock().unwrap() = false;
     let _ = app.emit("stats-updated", ());
     true
+}
+
+#[tauri::command]
+pub fn resolve_legacy_learned(app: AppHandle, state: State<'_, AppState>, dict_id: String, order_token: String) -> usize {
+    let (count, all_learned) = {
+        let settings = state.settings.lock().unwrap();
+        if dict_id.is_empty() || settings.active_dictionary != dict_id { return 0; }
+        let mut learned = state.learned.lock().unwrap();
+        let mut engine = state.word_engine.lock().unwrap();
+        let mut next = learned.clone();
+        let count = next.resolve(&dict_id, engine.card_ids(), &order_token);
+        if count == 0 || !commit_learned(&app, &mut learned, next) { return 0; }
+        engine.set_learned_ids(learned.ids(&dict_id));
+        let all_learned = engine.unlearned_cards().next().is_none();
+        *state.all_learned.lock().unwrap() = all_learned;
+        (count, all_learned)
+    };
+    if all_learned { state.all_learned_notify.notify_one(); }
+    let _ = app.emit("stats-updated", ());
+    count
 }
 
 // ── Dictionaries ──────────────────────────────────────────────────────────────
@@ -514,21 +485,15 @@ pub fn delete_dictionary(app: AppHandle, state: State<'_, AppState>, id: String)
         (settings.active_dictionary.clone(), switched)
     };
 
-    // Remove learned data for deleted dictionary and persist
-    {
-        let mut learned = state.learned.lock().unwrap();
-        learned.remove(&id);
-        save_learned_to_disk(&app, &learned);
-    }
-
-    // If the active dictionary was deleted, reload engine with fallback
+    // Keep stable and unresolved markers even if a dictionary is currently absent.
     if dict_switched {
-        if let Some(words) = load_dictionary_by_id(&app, &new_active) {
-            let learned_indices = state.learned.lock().unwrap()
-                .get(&new_active).cloned().unwrap_or_default();
+        let settings = state.settings.lock().unwrap();
+        if settings.active_dictionary == new_active {
+            let words = load_dictionary_by_id(&app, &new_active).unwrap_or_default();
+            let learned = state.learned.lock().unwrap();
             let mut engine = state.word_engine.lock().unwrap();
             engine.load_dictionary(words);
-            engine.set_learned(learned_indices);
+            engine.set_learned_ids(learned.ids(&new_active));
         }
         *state.all_learned.lock().unwrap() = false;
         *state.all_dicts_done.lock().unwrap() = false;

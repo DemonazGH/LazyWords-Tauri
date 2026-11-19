@@ -7,7 +7,7 @@ const definitionEl = document.getElementById('definition');
 let currentSettings = {};
 let hideTimer = null;
 let revealTimer = null;
-let currentWordIndex = null; // index of the currently displayed card (null when hidden)
+let currentCardId = null;
 let currentDictionaryId = null;
 let isCardVisible = false;
 let layoutRevision = 0;
@@ -16,11 +16,11 @@ async function init() {
   currentSettings = await window.api.getSettings();
   applySettings(currentSettings);
 
-  window.api.onShowWord(({ term, definition, index, dictId, showDuration, answerDelay }) => {
+  window.api.onShowWord(({ term, definition, cardId, dictId, showDuration, answerDelay }) => {
     if (dictId !== currentSettings.activeDictionary) return;
     termEl.textContent = term;
     definitionEl.textContent = definition;
-    currentWordIndex = index ?? null;
+    currentCardId = cardId ?? null;
     currentDictionaryId = dictId;
     return showCardTemporarily(showDuration, answerDelay).catch(console.error);
   });
@@ -37,21 +37,21 @@ async function init() {
   });
 
   window.api.onAllLearned(({ headline, dictLabel, dictName }) => {
-    currentWordIndex = null; // status card — not a learnable entry
+    currentCardId = null; // status card, not a learnable entry
     termEl.textContent = headline ?? 'All cards learned! 🎉';
     definitionEl.textContent = `${dictLabel ?? 'Dictionary:'} ${dictName ?? ''}`;
     return showCardTemporarily().catch(console.error);
   });
 
   window.api.onSwitchedDict(({ headline, dictName }) => {
-    currentWordIndex = null;
+    currentCardId = null;
     termEl.textContent = headline ?? 'Switched to:';
     definitionEl.textContent = dictName ?? '';
     return showCardTemporarily().catch(console.error);
   });
 
   window.api.onAllDictsLearned(({ headline, sub }) => {
-    currentWordIndex = null;
+    currentCardId = null;
     termEl.textContent = headline ?? 'All dictionaries learned! 🎉';
     definitionEl.textContent = sub ?? 'Restore cards in settings';
     return showCardTemporarily().catch(console.error);
@@ -59,11 +59,10 @@ async function init() {
 
   // Ctrl+Shift+K: mark current card as learned
   window.api.onMarkKnown(() => {
-    if (!isCardVisible || currentWordIndex === null) return;
-    const idx = currentWordIndex;
-    currentWordIndex = null; // prevent double-marking
-    window.api.markLearned(idx, currentDictionaryId);
+    if (!isCardVisible || currentCardId === null) return;
+    const result = window.api.markLearned(currentCardId, currentDictionaryId);
     hideCard();
+    return Promise.resolve(result).catch(console.error);
   });
 }
 
@@ -121,7 +120,7 @@ async function showCardTemporarily(showDuration = currentSettings.showDuration ?
 
 function hideCard() {
   layoutRevision++;
-  currentWordIndex = null;
+  currentCardId = null;
   currentDictionaryId = null;
   cardEl.classList.remove('visible');
   isCardVisible = false;
