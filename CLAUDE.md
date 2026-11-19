@@ -55,10 +55,10 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 
 **AppState** (`state.rs`) is the central Mutex-protected state shared across all Rust modules:
 - `settings` – user config (intervals, answer delay, font size, position, language, autostart, first_launch)
-- `word_engine` – holds loaded dictionary + `HashSet<usize>` of learned card indices
+- `word_engine` - holds the loaded dictionary and derives its excluded row indices from stable learned IDs
 - `scheduling_history` - local exposure counts and last-shown times for opt-in smart scheduling
 - `stats_tracker` – daily/streak statistics
-- `learned` – `HashMap<dict_name, Vec<usize>>` persisted across sessions; both learned data and statistics must load successfully before AppState exists
+- `learned` - deck-scoped card IDs and separately preserved legacy markers; learned data and statistics must load successfully before AppState exists
 - `is_paused`, `all_learned`, `all_dicts_done` – runtime state
 - `all_learned_notify` – wakes card-duration and interval waits when completion becomes pending
 - `manual_trigger` – interrupts timer pacing when `Ctrl+Shift+N` / tray "Next" shows a card manually
@@ -76,7 +76,7 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 - Tray icon with normal/dimmed (paused) states; tooltip "LazyWords"
 - Menu: Pause/Resume, Next word, Dictionary submenu (active dict has checkmark), Settings, Quick Add, Quit
 - All labels localized via `t()` — menu rebuilt on language change
-- Quit saves learned/stats/settings before `app.exit(0)`
+- Quit saves stats/settings before `app.exit(0)`; learned changes are saved at the moment of mutation
 
 **Global shortcuts** (`lib.rs`):
 - `Ctrl+Shift+W` – toggle settings window (show/hide pre-created window)
@@ -95,11 +95,12 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 - `center_on_cursor_monitor()` centers a window on the monitor under the cursor (used for settings window)
 
 **IPC commands** (`commands.rs`):
-- `mark_learned(index, dictionary_id)` validates the visible card's source and rejects duplicates/stale indices, persists progress, emits statistics and wakes pending completion.
-- `remove_learned` / `clear_learned` — persist `learned.json` + `stats.json`, reset `all_learned`, emit `stats-updated`
-- `delete_dictionary` — removes learned data for the deleted dict; falls back to first available dictionary (not hardcoded)
+- `mark_learned(card_id, dict_id)` validates the card's current deck and content ID, rejects duplicate marks, and saves before changing the exclusion set.
+- `remove_learned` / `clear_learned` - restore only matching cards from the requested active deck. Pending legacy and missing cards retain their markers.
+- `resolve_legacy_learned` links unique matching rows only after explicit confirmation and validates the reviewed order token. Missing, duplicate-content and out-of-range records remain pending.
+- `delete_dictionary` - switches away from an active deleted dictionary; preserves markers in case the same content is reimported.
 - `get_all_dict_ids` / `load_dictionary_by_id` — pub helpers used by timer for auto-switch
-- `save_learned_to_disk` / `save_stats_to_disk` — pub helpers shared with timer
+- `save_stats_to_disk` - shared by the timer and IPC commands
 - `complete_onboarding` validates/persists selection before destroying the native window; import uses a parented picker outside the UI thread.
 
 **Single-instance lock**: Windows named mutex — second launch exits immediately.
@@ -129,11 +130,13 @@ discards stale async responses. Card state is invalidated on dictionary switches
 ### Persistence
 
 All data written to OS AppData directory via `tauri::path`:
-- `data/settings.json`, `data/stats.json`, `data/learned.json`
-- `data/progress.json` - versioned smart-scheduling history keyed by deck and a stable hash of term plus definition. Reordering does not transfer exposure history to a different card. Existing learned markers remain row-based; this is not a learned-data migration.
+- `data/settings.json`, `data/stats.json`
+- `data/learned-v2.json` - authoritative versioned learned IDs and pending row indices. Initial migration preserves the original `data/learned.json` byte-for-byte. Older app versions read only that legacy file and cannot see new v2 progress.
+- Pending markers never suppress cards until linked. Settings only offers linking for the active deck, after the user confirms its historical order. The app cannot verify historical order from a legacy row number alone. Linking is not counted as a new learned action.
+- Learned IDs and `data/progress.json` share the existing stable term-and-definition hash, scoped by dictionary ID. A reorder or deletion of other rows does not transfer a marker. Editing a term or definition creates a different ID; identical content in one deck shares an ID.
 - Learned data and statistics use `profile_data.rs`: only missing files default to empty. Invalid or unreadable files abort startup with a localized recovery dialog before dictionary fallback, onboarding, autostart or timers can write anything.
 - Learned and stats writes use a flushed, synced temp file in the same directory and atomic replacement. Failed writes are logged, leave the previous destination intact, and clean up their temp files. These are independent per-file saves, not a transaction across both files.
-- `data/my-words.csv` - Quick Add's app-managed deck. Writes atomically append cards without changing existing learned row indices.
+- `data/my-words.csv` - Quick Add's app-managed deck. Writes atomically append cards and reapply existing learned IDs.
 - `dictionaries/` — user-imported dictionaries
 
 ### Key Design Notes
@@ -141,7 +144,7 @@ All data written to OS AppData directory via `tauri::path`:
 - `withGlobalTauri: true` in `tauri.conf.json` — Tauri API available as `window.__TAURI__` without a bundler.
 - No frontend build step — raw HTML/CSS/JS served directly (`frontendDist: "../src"`).
 - CSP disabled (`"csp": null`).
-- `show-word` includes the source dictionary ID with term/definition/index and a timing snapshot. Rust paces scheduling for answer delay plus show duration; only the renderer hides cards. Status cards are never delayed.
+- `show-word` includes the source dictionary ID with term, definition, stable card ID, and a timing snapshot. Rust paces scheduling for answer delay plus show duration; only the renderer hides cards. Status cards are never delayed.
 - Answer delay is Off by default for new and existing profiles, or 1–5 seconds when enabled. Show duration is the time after the answer appears. Timing changes apply to the next card.
 - Smart scheduling is Off by default for new and existing profiles. When enabled, timer, keyboard and tray draws share weighted selection: unseen and less-practiced cards get more weight; recent cards get less. Immediate repeats are avoided when another distinct unlearned card is available. Learned cards remain excluded; the interval does not change.
 - Unknown-version or unreadable scheduling history is never overwritten. Selection uses in-memory history for the session and logs the load failure.
@@ -182,6 +185,7 @@ autostart and native MSI cleanup behavior; counts differ on other platforms.
 | `settings.rs` | Default values match expected constants; round-trip JSON serialization/deserialization is lossless |
 | `profile_data.rs` | Missing files do not write; valid legacy progress and stats round-trip; invalid or unreadable files abort loading unchanged; atomic saves preserve originals on serialization/replacement failure; Windows read and replacement locks |
 | `scheduler.rs` | Weight ordering, learned exclusion, immediate-repeat avoidance, per-deck/card identity, reorder/restart persistence, preservation of unreadable or newer history |
+| `learned.rs` | Conservative resolution, rejection of a stale review, retention of missing, duplicate and out-of-range markers |
 
 Additional Rust coverage includes card layout, completion timers, onboarding
 recovery, persistence failures, and Windows startup/cleanup. `npm test` runs
@@ -219,6 +223,8 @@ tests do not certify a newly rebuilt package. Review exact artifacts before rele
 
 ## Fixed Bugs
 
+- Learned exclusions no longer shift to other cards when dictionary rows are
+  reordered. Legacy markers with no verified source order are preserved pending.
 - Corrupt or unreadable learned data/statistics no longer silently reset at startup.
   Loading either file unsuccessfully prevents AppState and all profile writers
   from initializing; the recovery dialog identifies the affected file. Normal

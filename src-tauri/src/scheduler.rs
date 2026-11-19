@@ -113,6 +113,7 @@ impl SchedulingHistory {
         Some(WordWithIndex {
             entry: word.clone(),
             index,
+            card_id: id.clone(),
         })
     }
 

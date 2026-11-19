@@ -220,7 +220,10 @@ pub fn save_quick_card(
         let words = append_card(&path, card)?;
         let active = settings.active_dictionary == DECK_ID;
         if active {
-            state.word_engine.lock().unwrap().load_dictionary(words);
+            let learned = state.learned.lock().unwrap();
+            let mut engine = state.word_engine.lock().unwrap();
+            engine.load_dictionary(words);
+            engine.set_learned_ids(learned.ids(DECK_ID));
             *state.all_learned.lock().unwrap() = false;
         }
         *state.all_dicts_done.lock().unwrap() = false;

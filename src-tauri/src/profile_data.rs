@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::fs;
 use std::io::{self, Write};
@@ -6,9 +5,8 @@ use std::path::{Path, PathBuf};
 
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::learned::{Learned, FILE_NAME};
 use crate::stats::Stats;
-
-pub type Learned = HashMap<String, Vec<usize>>;
 
 #[derive(Debug)]
 pub struct LoadError {
@@ -32,35 +30,89 @@ impl std::error::Error for LoadError {
 pub struct ProfileData {
     pub learned: Learned,
     pub stats: Stats,
+    needs_migration: bool,
 }
 
 impl ProfileData {
     pub fn load(dir: &Path) -> Result<Self, LoadError> {
         // Load both before constructing AppState or enabling any profile writers.
-        let learned_path = dir.join("learned.json");
-        let learned = load_json(&learned_path).map_err(|source| LoadError {
-            path: learned_path,
-            source,
-        })?;
+        let stable_path = dir.join(FILE_NAME);
+        let (learned, needs_migration) = match read_json::<Learned>(&stable_path) {
+            Ok(learned) if learned.is_supported() => (learned, false),
+            Ok(_) => {
+                return Err(LoadError {
+                    path: stable_path,
+                    source: io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Unsupported learned-marker format",
+                    ),
+                })
+            }
+            Err(source) if source.kind() == io::ErrorKind::NotFound => {
+                let path = dir.join("learned.json");
+                let legacy = load_json(&path).map_err(|source| LoadError { path, source })?;
+                let learned = Learned::from_legacy(legacy);
+                let needs_migration = learned.pending_count() != 0;
+                (learned, needs_migration)
+            }
+            Err(source) => {
+                return Err(LoadError {
+                    path: stable_path,
+                    source,
+                })
+            }
+        };
         let stats_path = dir.join("stats.json");
         let stats = crate::stats::load_stats(&stats_path).map_err(|source| LoadError {
             path: stats_path,
             source,
         })?;
-        Ok(Self { learned, stats })
+        Ok(Self {
+            learned,
+            stats,
+            needs_migration,
+        })
+    }
+
+    pub fn open(dir: &Path) -> Result<Self, LoadError> {
+        let profile = Self::load(dir)?;
+        if profile.needs_migration {
+            let path = dir.join(FILE_NAME);
+            // The legacy file is neither renamed nor rewritten, including on failure.
+            let save = || -> io::Result<()> {
+                let temp = write_json_temp(&path, &profile.learned)?;
+                temp.persist_noclobber(&path).map_err(|error| error.error)?;
+                Ok(())
+            };
+            save().map_err(|source| LoadError { path, source })?;
+        }
+        Ok(profile)
     }
 }
 
+fn read_json<T: DeserializeOwned>(path: &Path) -> io::Result<T> {
+    serde_json::from_slice(&fs::read(path)?)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
+}
+
 pub fn load_json<T: DeserializeOwned + Default>(path: &Path) -> io::Result<T> {
-    match fs::read(path) {
-        Ok(bytes) => serde_json::from_slice(&bytes)
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error)),
+    match read_json(path) {
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(T::default()),
-        Err(error) => Err(error),
+        result => result,
     }
 }
 
 pub fn save_json<T: Serialize + ?Sized>(path: &Path, value: &T) -> io::Result<()> {
+    write_json_temp(path, value)?
+        .persist(path)
+        .map_err(|error| error.error)?;
+    Ok(())
+}
+
+fn write_json_temp<T: Serialize + ?Sized>(
+    path: &Path,
+    value: &T,
+) -> io::Result<tempfile::NamedTempFile> {
     let bytes = serde_json::to_vec_pretty(value)?;
     let parent = path
         .parent()
@@ -70,16 +122,17 @@ pub fn save_json<T: Serialize + ?Sized>(path: &Path, value: &T) -> io::Result<()
     let mut temp = tempfile::NamedTempFile::new_in(parent)?;
     temp.write_all(&bytes)?;
     temp.as_file().sync_all()?;
-    temp.persist(path).map_err(|error| error.error)?;
-    Ok(())
+    Ok(temp)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::learned::LegacyMarkers;
     use crate::stats::{save_stats, DailyStat};
+    use std::collections::HashMap;
 
-    fn sample_learned() -> Learned {
+    fn sample_learned() -> LegacyMarkers {
         HashMap::from([("my-deck".into(), vec![4, 0, 7]), ("other".into(), vec![2])])
     }
 
@@ -124,7 +177,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("missing/data");
         let profile = ProfileData::load(&path).unwrap();
-        assert!(profile.learned.is_empty());
+        assert_eq!(profile.learned.pending_count(), 0);
         assert!(profile.stats.days.is_empty());
         assert!(!path.exists());
     }
@@ -138,12 +191,55 @@ mod tests {
         save_stats(&stats_path, &sample_stats()).unwrap();
         let before = bytes(dir.path());
         let restored = ProfileData::load(dir.path()).unwrap();
-        assert_eq!(restored.learned, sample_learned());
+        assert_eq!(restored.learned, Learned::from_legacy(sample_learned()));
         assert_eq!(
             serde_json::to_value(restored.stats).unwrap(),
             serde_json::to_value(sample_stats()).unwrap()
         );
         assert_eq!(bytes(dir.path()), before);
+    }
+
+    #[test]
+    fn opening_legacy_profile_preserves_original_and_uses_only_v2_on_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let legacy = dir.path().join("learned.json");
+        let stable = dir.path().join(FILE_NAME);
+        let original = br#"{ "my-deck": [4, 0, 7], "missing": [999] }"#;
+        fs::write(&legacy, original).unwrap();
+        let mut data = ProfileData::open(dir.path()).unwrap();
+        assert!(stable.exists());
+        assert!(data.learned.ids("my-deck").is_empty());
+        assert_eq!(data.learned.pending("my-deck"), [4, 0, 7]);
+        let ids = ["a".repeat(64)];
+        assert_eq!(
+            data.learned
+                .resolve("my-deck", &ids, &Learned::order_token(&ids)),
+            1
+        );
+        save_json(&stable, &data.learned).unwrap();
+        let restarted = ProfileData::open(dir.path()).unwrap();
+        assert_eq!(restarted.learned.ids("my-deck"), &ids);
+        assert_eq!(restarted.learned.pending("my-deck"), [4, 7]);
+        assert_eq!(restarted.learned.pending("missing"), [999]);
+        assert_eq!(fs::read(legacy).unwrap(), original);
+    }
+
+    #[test]
+    fn invalid_stats_prevent_migration_and_invalid_v2_does_not_fall_back() {
+        let dir = tempfile::tempdir().unwrap();
+        save_json(&dir.path().join("learned.json"), &sample_learned()).unwrap();
+        let stats = dir.path().join("stats.json");
+        let stable = dir.path().join(FILE_NAME);
+        fs::write(&stats, b"{").unwrap();
+        assert_eq!(ProfileData::open(dir.path()).unwrap_err().path, stats);
+        assert!(!stable.exists());
+        save_stats(&stats, &sample_stats()).unwrap();
+        for invalid in [br#"{"version":9,"decks":{},"pending":{}}"#.as_slice(), b"{"] {
+            fs::write(&stable, invalid).unwrap();
+            let before = bytes(dir.path());
+            assert_eq!(ProfileData::open(dir.path()).unwrap_err().path, stable);
+            assert_eq!(bytes(dir.path()), before);
+        }
     }
 
     #[test]
@@ -200,12 +296,12 @@ mod tests {
         let root = dir.path().join("data");
         let learned_path = root.join("learned.json");
         let stats_path = root.join("stats.json");
-        save_json(&learned_path, &Learned::new()).unwrap();
+        save_json(&learned_path, &LegacyMarkers::new()).unwrap();
         save_stats(&stats_path, &Stats::default()).unwrap();
         save_json(&learned_path, &sample_learned()).unwrap();
         save_stats(&stats_path, &sample_stats()).unwrap();
         let restored = ProfileData::load(&root).unwrap();
-        assert_eq!(restored.learned, sample_learned());
+        assert_eq!(restored.learned, Learned::from_legacy(sample_learned()));
         assert_eq!(restored.stats.days["2026-11-16"].shown, 12);
         assert_eq!(restored.stats.days["2026-11-16"].learned, 3);
         assert_eq!(fs::read_dir(&root).unwrap().count(), 2);
@@ -270,7 +366,7 @@ mod tests {
                 .open(path)
                 .unwrap();
             let result = if path == &learned {
-                save_json(path, &Learned::new())
+                save_json(path, &LegacyMarkers::new())
             } else {
                 save_stats(path, &Stats::default())
             };
@@ -278,10 +374,10 @@ mod tests {
             assert_eq!(bytes(dir.path()), before);
             drop(lock);
         }
-        save_json(&learned, &Learned::new()).unwrap();
+        save_json(&learned, &LegacyMarkers::new()).unwrap();
         save_stats(&stats, &Stats::default()).unwrap();
         let restored = ProfileData::load(dir.path()).unwrap();
-        assert!(restored.learned.is_empty());
+        assert_eq!(restored.learned.pending_count(), 0);
         assert!(restored.stats.days.is_empty());
     }
 }
