@@ -13,6 +13,8 @@ const WINDOW: &str = "quick-add";
 const OPENED: &str = "quick-add-opened";
 const STORAGE_ERROR: &str = "quickAdd.saveError";
 const DUPLICATE: &str = "quickAdd.duplicate";
+const STALE_CARD: &str = "myWords.stale";
+const AMBIGUOUS_CARD: &str = "myWords.ambiguous";
 const TERM_LIMIT: usize = 160;
 const DEFINITION_LIMIT: usize = 4000;
 const HEADERS: [&str; 2] = ["term", "definition"];
@@ -21,6 +23,14 @@ const HEADERS: [&str; 2] = ["term", "definition"];
 pub struct Draft {
     term: String,
     suggestion: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MyWord {
+    card_id: String,
+    #[serde(flatten)]
+    entry: WordEntry,
 }
 
 pub fn is_reserved(id: &str) -> bool {
@@ -32,7 +42,7 @@ fn deck_path(app: &AppHandle) -> tauri::Result<PathBuf> {
 }
 
 pub fn has_deck(app: &AppHandle) -> bool {
-    deck_path(app).is_ok_and(|path| path.is_file())
+    load_deck(app).is_some()
 }
 
 pub fn load_deck(app: &AppHandle) -> Option<Vec<WordEntry>> {
@@ -86,14 +96,49 @@ fn read_deck(path: &Path) -> Result<Vec<WordEntry>, &'static str> {
 
 fn append_card(path: &Path, card: WordEntry) -> Result<Vec<WordEntry>, &'static str> {
     let mut words = read_deck(path)?;
-    if words
-        .iter()
-        .any(|entry| entry.term == card.term && entry.definition == card.definition)
-    {
+    if words.iter().any(|entry| same_card(entry, &card)) {
         return Err(DUPLICATE);
     }
     words.push(card);
+    write_deck(path, &words)?;
+    Ok(words)
+}
 
+fn same_card(a: &WordEntry, b: &WordEntry) -> bool {
+    a.term == b.term && a.definition == b.definition
+}
+
+fn change_card(
+    path: &Path,
+    card_id: &str,
+    replacement: Option<WordEntry>,
+) -> Result<Option<Vec<WordEntry>>, &'static str> {
+    let mut words = read_deck(path)?;
+    let mut matches = words.iter().enumerate()
+        .filter(|(_, word)| crate::scheduler::card_id(word) == card_id);
+    let (index, original) = matches.next().ok_or(STALE_CARD)?;
+    if matches.next().is_some() {
+        return Err(AMBIGUOUS_CARD);
+    }
+
+    if let Some(card) = replacement {
+        if same_card(original, &card) {
+            return Ok(None);
+        }
+        if words.iter().any(|entry| same_card(entry, &card)) {
+            return Err(DUPLICATE);
+        }
+        words[index] = card;
+    } else {
+        words.remove(index);
+    }
+
+    // Learned markers and scheduling history stay keyed to their original content.
+    write_deck(path, &words)?;
+    Ok(Some(words))
+}
+
+fn write_deck(path: &Path, words: &[WordEntry]) -> Result<(), &'static str> {
     let parent = path.parent().ok_or(STORAGE_ERROR)?;
     fs::create_dir_all(parent).map_err(|_| STORAGE_ERROR)?;
     let mut temp = tempfile::NamedTempFile::new_in(parent).map_err(|_| STORAGE_ERROR)?;
@@ -102,8 +147,7 @@ fn append_card(path: &Path, card: WordEntry) -> Result<Vec<WordEntry>, &'static 
             .has_headers(false)
             .from_writer(temp.as_file_mut());
         writer.write_record(HEADERS).map_err(|_| STORAGE_ERROR)?;
-        // No old row moves, so existing learned indices still refer to the same cards.
-        for word in &words {
+        for word in words {
             writer
                 .write_record([&word.term, &word.definition])
                 .map_err(|_| STORAGE_ERROR)?;
@@ -112,7 +156,7 @@ fn append_card(path: &Path, card: WordEntry) -> Result<Vec<WordEntry>, &'static 
     }
     temp.as_file().sync_all().map_err(|_| STORAGE_ERROR)?;
     temp.persist(path).map_err(|_| STORAGE_ERROR)?;
-    Ok(words)
+    Ok(())
 }
 
 #[cfg(windows)]
@@ -212,23 +256,86 @@ pub fn save_quick_card(
         return Err("Quick Add window required".into());
     }
     let card = clean_card(&term, &definition)?;
-    let app = window.app_handle();
+    apply_deck_change(window.app_handle(), &state, |path| append_card(path, card).map(Some))
+}
+
+#[tauri::command]
+pub fn get_my_words(window: WebviewWindow) -> Result<Vec<MyWord>, String> {
+    let app = settings_app(&window)?;
     let path = deck_path(app).map_err(|_| STORAGE_ERROR)?;
-    let active = {
-        // Serialize appends with dictionary changes so the engine never gets the wrong deck.
-        let settings = state.settings.lock().unwrap();
-        let words = append_card(&path, card)?;
+    Ok(read_deck(&path)?.into_iter().map(|entry| MyWord {
+        card_id: crate::scheduler::card_id(&entry),
+        entry,
+    }).collect())
+}
+
+#[tauri::command]
+pub fn edit_my_word(
+    window: WebviewWindow,
+    state: State<'_, AppState>,
+    card_id: String,
+    term: String,
+    definition: String,
+) -> Result<(), String> {
+    let app = settings_app(&window)?;
+    let card = clean_card(&term, &definition)?;
+    apply_deck_change(app, &state, |path| change_card(path, &card_id, Some(card)))
+}
+
+#[tauri::command]
+pub fn delete_my_word(
+    window: WebviewWindow,
+    state: State<'_, AppState>,
+    card_id: String,
+) -> Result<(), String> {
+    let app = settings_app(&window)?;
+    apply_deck_change(app, &state, |path| change_card(path, &card_id, None))
+}
+
+fn settings_app(window: &WebviewWindow) -> Result<&AppHandle, String> {
+    if window.label() != "settings" {
+        return Err("Settings window required".into());
+    }
+    Ok(window.app_handle())
+}
+
+fn apply_deck_change(
+    app: &AppHandle,
+    state: &AppState,
+    change: impl FnOnce(&Path) -> Result<Option<Vec<WordEntry>>, &'static str>,
+) -> Result<(), String> {
+    let path = deck_path(app).map_err(|_| STORAGE_ERROR)?;
+    let (active, switched) = {
+        // Serialize deck writes and active-dictionary changes.
+        let mut settings = state.settings.lock().unwrap();
+        let Some(mut words) = change(&path)? else { return Ok(()) };
         let active = settings.active_dictionary == DECK_ID;
+        let switched = active && words.is_empty();
+        if switched {
+            let fallback = crate::commands::get_all_dict_ids(app).into_iter().find_map(|id| {
+                let words = crate::commands::load_dictionary_by_id(app, &id)?;
+                (!words.is_empty()).then_some((id, words))
+            });
+            let (id, fallback_words) = fallback.unwrap_or_default();
+            settings.active_dictionary = id;
+            words = fallback_words;
+            // The CSV already committed. Startup also falls back if settings could not be written.
+            crate::settings::save_settings(&path.with_file_name("settings.json"), &settings);
+        }
         if active {
             let learned = state.learned.lock().unwrap();
             let mut engine = state.word_engine.lock().unwrap();
             engine.load_dictionary(words);
-            engine.set_learned_ids(learned.ids(DECK_ID));
+            engine.set_learned_ids(learned.ids(&settings.active_dictionary));
             *state.all_learned.lock().unwrap() = false;
         }
         *state.all_dicts_done.lock().unwrap() = false;
-        active
+        (active, switched.then(|| settings.clone()))
     };
+    if let Some(settings) = switched {
+        let _ = app.emit("update-settings", &settings);
+        let _ = app.emit("dict-auto-switched", serde_json::json!({ "newId": settings.active_dictionary }));
+    }
     let _ = app.emit("dict-list-updated", ());
     if active {
         let _ = app.emit("stats-updated", ());
@@ -240,13 +347,16 @@ pub fn save_quick_card(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scheduler::card_id;
     use crate::word_engine::WordEngine;
 
     #[test]
-    fn appending_keeps_indices_and_quotes_multiline_unicode() {
+    fn appending_preserves_card_ids_and_quotes_multiline_unicode() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("my-words.csv");
-        append_card(&path, clean_card(" old ", " first ").unwrap()).unwrap();
+        let old = clean_card(" old ", " first ").unwrap();
+        let learned = [card_id(&old)];
+        append_card(&path, old).unwrap();
         let definition = "значение, \"пример\"\nSecond line";
         let words = append_card(&path, clean_card("new", definition).unwrap()).unwrap();
         let reread = read_deck(&path).unwrap();
@@ -254,9 +364,105 @@ mod tests {
         assert_eq!(reread[0].definition, "first");
         assert_eq!(reread[1].definition, definition);
         let mut engine = WordEngine::new();
-        engine.set_learned(vec![0]);
         engine.load_dictionary(words);
+        engine.set_learned_ids(&learned);
         assert_eq!(engine.get_random_word().unwrap().index, 1);
+    }
+
+    #[test]
+    fn edits_and_deletes_preserve_other_cards_and_progress_after_reopen() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("my-words.csv");
+        let first = clean_card("first", "delete this").unwrap();
+        let second = clean_card("second", "existing learned card").unwrap();
+        let third = clean_card("third", "also learned").unwrap();
+        let [first_id, second_id, third_id] = [&first, &second, &third].map(card_id);
+        for card in [first, second.clone(), third] {
+            append_card(&path, card).unwrap();
+        }
+        let mut learned = crate::learned::Learned::from_legacy(
+            [(DECK_ID.to_owned(), vec![1, 42])].into(),
+        );
+        assert!(learned.mark(DECK_ID, &second_id));
+        assert!(learned.mark(DECK_ID, &third_id));
+        let learned_path = dir.path().join(crate::learned::FILE_NAME);
+        crate::profile_data::save_json(&learned_path, &learned).unwrap();
+        let learned_before = fs::read(&learned_path).unwrap();
+        let other_files = ["learned.json", "progress.json", "stats.json"].map(|name| {
+            let path = dir.path().join(name);
+            fs::write(&path, b"{}").unwrap();
+            path
+        });
+
+        change_card(&path, &first_id, None).unwrap();
+        let updated = clean_card("second", "новое, \"значение\"\nMore text").unwrap();
+        let updated_id = card_id(&updated);
+        change_card(&path, &second_id, Some(updated.clone())).unwrap();
+        let words = read_deck(&path).unwrap();
+        assert_eq!(words[0].definition, updated.definition);
+        assert_eq!(words.iter().map(card_id).collect::<Vec<_>>(), [updated_id.clone(), third_id]);
+        let mut engine = WordEngine::new();
+        engine.load_dictionary(words);
+        engine.set_learned_ids(learned.ids(DECK_ID));
+        assert_eq!(engine.get_random_word().unwrap().card_id, updated_id);
+        assert_eq!(learned.pending(DECK_ID), &[1, 42]);
+        assert_eq!(fs::read(learned_path).unwrap(), learned_before);
+        for path in other_files {
+            assert_eq!(fs::read(path).unwrap(), b"{}");
+        }
+        append_card(&path, second).unwrap();
+        engine.load_dictionary(read_deck(&path).unwrap());
+        engine.set_learned_ids(learned.ids(DECK_ID));
+        assert_eq!(engine.learned_indices.len(), 2);
+    }
+
+    #[test]
+    fn stale_duplicate_and_ambiguous_changes_do_not_write() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("my-words.csv");
+        let a = clean_card("same", "first meaning").unwrap();
+        let b = clean_card("same", "another meaning").unwrap();
+        let id = card_id(&a);
+        write_deck(&path, &[a.clone(), b.clone()]).unwrap();
+        let original = fs::read(&path).unwrap();
+        assert!(change_card(&path, &id, Some(a.clone())).unwrap().is_none());
+        assert_eq!(change_card(&path, &id, Some(b.clone())).unwrap_err(), DUPLICATE);
+        assert_eq!(change_card(&path, "old-id", None).unwrap_err(), STALE_CARD);
+        assert_eq!(fs::read(&path).unwrap(), original);
+
+        write_deck(&path, &[a.clone(), a, b]).unwrap();
+        let original = fs::read(&path).unwrap();
+        assert_eq!(change_card(&path, &id, None).unwrap_err(), AMBIGUOUS_CARD);
+        assert_eq!(fs::read(&path).unwrap(), original);
+    }
+
+    #[test]
+    fn deleting_last_card_writes_a_reusable_empty_csv() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("my-words.csv");
+        let card = clean_card("last", "card").unwrap();
+        append_card(&path, card.clone()).unwrap();
+        assert!(change_card(&path, &card_id(&card), None).unwrap().unwrap().is_empty());
+        assert!(read_deck(&path).unwrap().is_empty());
+        assert_eq!(append_card(&path, card).unwrap().len(), 1);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn failed_atomic_replacement_keeps_the_old_deck() {
+        use std::os::windows::fs::OpenOptionsExt;
+        use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_WRITE};
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("my-words.csv");
+        let card = clean_card("last", "card").unwrap();
+        let id = card_id(&card);
+        append_card(&path, card).unwrap();
+        let original = fs::read(&path).unwrap();
+        let _lock = fs::OpenOptions::new().read(true)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE).open(&path).unwrap();
+        assert_eq!(change_card(&path, &id, None).unwrap_err(), STORAGE_ERROR);
+        assert_eq!(fs::read(&path).unwrap(), original);
     }
 
     #[test]

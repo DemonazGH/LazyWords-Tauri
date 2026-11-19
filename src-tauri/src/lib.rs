@@ -470,7 +470,10 @@ pub fn run() {
             card_layout::resize_card,
             quick_add::take_quick_add_draft,
             quick_add::save_quick_card,
-            quick_add::close_quick_add
+            quick_add::close_quick_add,
+            quick_add::get_my_words,
+            quick_add::edit_my_word,
+            quick_add::delete_my_word
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

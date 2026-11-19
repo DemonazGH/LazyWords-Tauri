@@ -30,6 +30,7 @@ function applyLocale(strings) {
   // Re-render dynamic parts with new strings
   renderAnswerDelay();
   renderLearnedList();
+  if (myWordsManager.open && !myWordsBusy) loadMyWords();
   if (document.getElementById('tab-stats').classList.contains('active')) {
     loadStats();
   }
@@ -293,6 +294,143 @@ document.getElementById('btn-import').addEventListener('click', async () => {
   }
 
   setTimeout(() => msg.classList.remove('visible'), 4000);
+});
+
+// My Words
+
+const myWordsManager = document.getElementById('my-words');
+const myWordsList = document.getElementById('my-words-list');
+const myWordsStatus = document.getElementById('my-words-status');
+const editMyWordDialog = document.getElementById('my-words-edit');
+const deleteMyWordDialog = document.getElementById('my-words-delete');
+const myWordsTerm = document.getElementById('my-words-term');
+const myWordsDefinition = document.getElementById('my-words-definition');
+const myWordsCancelEdit = document.getElementById('my-words-cancel-edit');
+let myWordsRequest = 0;
+let myWordsBusy = false;
+let myWordsTarget = null;
+
+async function loadMyWords(message) {
+  const request = ++myWordsRequest;
+  try {
+    const cards = await window.api.getMyWords();
+    if (request !== myWordsRequest || !myWordsManager.open) return;
+    myWordsList.replaceChildren(...cards.map(renderMyWord));
+    myWordsList.hidden = cards.length === 0;
+    myWordsStatus.textContent = message || (cards.length ? '' :
+      (L['myWords.empty'] ?? 'My Words is empty. Use Quick Add to save a card.'));
+  } catch {
+    if (request !== myWordsRequest || !myWordsManager.open) return;
+    myWordsList.replaceChildren();
+    myWordsList.hidden = true;
+    myWordsStatus.textContent = L['myWords.loadError'] ?? 'Could not read My Words.';
+  }
+}
+
+function renderMyWord(card) {
+  const row = document.createElement('li');
+  const pair = document.createElement('div');
+  pair.className = 'my-words-pair';
+  const term = document.createElement('strong');
+  const definition = document.createElement('span');
+  term.textContent = card.term;
+  definition.textContent = card.definition;
+  pair.appendChild(term);
+  pair.appendChild(definition);
+  row.appendChild(pair);
+  for (const [action, fallback, dialog] of [
+    ['edit', 'Edit', editMyWordDialog],
+    ['delete', 'Delete', deleteMyWordDialog],
+  ]) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn-secondary';
+    button.textContent = L[`myWords.${action}`] ?? fallback;
+    button.setAttribute('aria-label', `${button.textContent}: ${card.term}`);
+    button.addEventListener('click', () => {
+      if (myWordsBusy) return;
+      myWordsTarget = card.cardId;
+      if (action === 'edit') {
+        myWordsTerm.value = card.term;
+        myWordsDefinition.value = card.definition;
+        myWordsTerm.removeAttribute('aria-invalid');
+        myWordsDefinition.removeAttribute('aria-invalid');
+      } else {
+        document.getElementById('my-words-delete-preview').textContent = `${card.term}\n${card.definition}`;
+      }
+      document.getElementById(`my-words-${action}-status`).textContent = '';
+      dialog.showModal();
+    });
+    row.appendChild(button);
+  }
+  return row;
+}
+
+async function mutateMyWords(action, dialog, submitId, mutate) {
+  if (myWordsBusy || !dialog.open || !myWordsTarget) return;
+  const status = document.getElementById(`my-words-${action}-status`);
+  const submit = document.getElementById(submitId);
+  myWordsBusy = true;
+  submit.disabled = true;
+  if (action === 'edit') myWordsTerm.readOnly = myWordsDefinition.readOnly = true;
+  status.textContent = L['myWords.working'] ?? 'Saving to My Words...';
+  try {
+    await mutate(myWordsTarget);
+  } catch (error) {
+    const messages = {
+      'quickAdd.invalidTerm': 'Enter a term on one line (up to 160 characters).',
+      'quickAdd.invalidDefinition': 'Enter a definition or translation (up to 4000 characters).',
+      'quickAdd.duplicate': 'This card is already in My Words.',
+      'myWords.stale': 'This card changed. Close this dialog and reopen My Words.',
+      'myWords.ambiguous': 'There are multiple identical cards. No changes were made.',
+    };
+    status.textContent = Object.hasOwn(messages, error)
+      ? (L[error] ?? messages[error])
+      : (L['myWords.writeError'] ?? 'Could not update My Words. No changes were saved.');
+    const invalidField = error === 'quickAdd.invalidTerm' ? myWordsTerm :
+      error === 'quickAdd.invalidDefinition' ? myWordsDefinition : null;
+    invalidField?.setAttribute('aria-invalid', 'true');
+    invalidField?.focus();
+    return;
+  } finally {
+    submit.disabled = false;
+    if (action === 'edit') myWordsTerm.readOnly = myWordsDefinition.readOnly = false;
+    myWordsBusy = false;
+  }
+  dialog.close();
+  document.getElementById('my-words-summary').focus();
+  await loadMyWords(action === 'edit' ? (L['myWords.saved'] ?? 'Card updated.') :
+    (L['myWords.deleted'] ?? 'Card deleted.'));
+}
+
+myWordsManager.addEventListener('toggle', () => {
+  if (myWordsManager.open) return loadMyWords();
+  myWordsRequest++;
+});
+
+myWordsCancelEdit.addEventListener('click', () => {
+  if (!myWordsBusy) editMyWordDialog.close();
+});
+for (const field of [myWordsTerm, myWordsDefinition]) {
+  field.addEventListener('input', () => field.removeAttribute('aria-invalid'));
+}
+for (const dialog of [editMyWordDialog, deleteMyWordDialog]) {
+  dialog.addEventListener('cancel', event => {
+    if (myWordsBusy) event.preventDefault();
+  });
+}
+
+document.getElementById('my-words-edit-form').addEventListener('submit', event => {
+  event.preventDefault();
+  return mutateMyWords('edit', editMyWordDialog, 'my-words-save', id =>
+    window.api.editMyWord(id, myWordsTerm.value.trim(), myWordsDefinition.value.trim()));
+});
+document.getElementById('my-words-delete-form').addEventListener('submit', event => {
+  if (event.submitter?.value === 'cancel' && !myWordsBusy) return;
+  event.preventDefault();
+  if (event.submitter?.id !== 'my-words-confirm-delete') return;
+  return mutateMyWords('delete', deleteMyWordDialog, 'my-words-confirm-delete', id =>
+    window.api.deleteMyWord(id));
 });
 
 // ── Learned list ───────────────────────────────────────────
@@ -594,7 +732,10 @@ async function init() {
   });
 
   // Dict list changed (e.g. import from onboarding) — reload dropdown
-  window.api.onDictListUpdated(refreshSettingsData);
+  window.api.onDictListUpdated(() => {
+    if (myWordsManager.open && !myWordsBusy) loadMyWords();
+    return refreshSettingsData();
+  });
 
   // Fallback: refresh data every time the settings window receives focus
   window.addEventListener('focus', refreshSettingsData);
