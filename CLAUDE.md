@@ -194,10 +194,14 @@ contracts. `src/modules/` remains legacy Electron code, not the active backend.
 
 **Workflow**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — runs on every push and pull_request to `main`.
 
-- Runs on `ubuntu-latest`
+- Keeps the existing `test` check on `ubuntu-latest` and adds `windows-test` on `windows-latest`; both run independently on each PR and push to main.
+- Uses read-only contents permission and a 30-minute limit per job.
+- Sets up Node 22, installs locked Node dependencies without lifecycle scripts, and runs `npm test` on both platforms.
 - Installs stable Rust via `dtolnay/rust-toolchain@stable`
-- Installs required Linux GTK/WebKit2 system dependencies for Tauri
-- Runs Rust unit tests in `src-tauri/`; Windows-only coverage runs in the release workflow.
+- Installs required GTK/WebKit2 system dependencies in the Linux job.
+- Runs `cargo test --locked` in `src-tauri/` on both platforms, including Windows-only startup, persistence and MSI cleanup coverage in PR checks.
+- CI-only debug-symbol settings limit disk use without disabling debug assertions. No packaging, signing, upload, tag or release steps are part of this workflow.
+- `tests/ci-workflow.test.cjs` guards the two platforms, both test suites and the read-only, test-only boundary. The release workflow remains separate.
 
 **Release workflow**: [`.github/workflows/release.yml`](.github/workflows/release.yml) - runs on `codex/release-*` branch pushes and `v*` tags.
 
