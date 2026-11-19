@@ -74,9 +74,16 @@ impl ProfileData {
         })
     }
 
-    pub fn open(dir: &Path) -> Result<Self, LoadError> {
-        let profile = Self::load(dir)?;
+    pub fn open(dir: &Path, bundled: Option<&Path>) -> Result<Self, LoadError> {
+        let mut profile = Self::load(dir)?;
         if profile.needs_migration {
+            if let (Some(bundled), Some(root)) = (bundled, dir.parent()) {
+                crate::bundled_migration::link_verified(
+                    &mut profile.learned,
+                    bundled,
+                    &root.join("dictionaries"),
+                );
+            }
             let path = dir.join(FILE_NAME);
             // The legacy file is neither renamed nor rewritten, including on failure.
             let save = || -> io::Result<()> {
@@ -172,6 +179,52 @@ mod tests {
         files
     }
 
+    fn shipped_decks() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/dictionaries")
+    }
+
+    #[test]
+    fn verified_release_rows_link_once_and_reordered_imports_and_overrides_stay_pending() {
+        let root = tempfile::tempdir().unwrap();
+        let data = root.path().join("data");
+        let imports = root.path().join("dictionaries");
+        fs::create_dir(&data).unwrap();
+        fs::create_dir(&imports).unwrap();
+        let legacy = br#"{"en-definitions":[2,2808,2809],"en-irregular-verbs":[221],"en-ru":[1],"custom":[1,0]}"#;
+        fs::write(data.join("learned.json"), legacy).unwrap();
+        let stats = br#"{ "2025-12-01": { "shown": 19, "learned": 7 } }"#;
+        fs::write(data.join("stats.json"), stats).unwrap();
+        fs::write(imports.join("EN-RU.JsOn"), "not even valid JSON").unwrap();
+        fs::write(
+            imports.join("custom.csv"),
+            "term,definition\nsecond,b\nfirst,a\n",
+        )
+        .unwrap();
+        let shipped = shipped_decks();
+        let first = ProfileData::open(&data, Some(&shipped)).unwrap();
+        for (deck, indices) in [
+            ("en-definitions", &[2usize, 2808][..]),
+            ("en-irregular-verbs", &[221][..]),
+        ] {
+            let file = shipped.join(format!("{deck}.csv"));
+            let rows = crate::dictionary_loader::load_dictionary(&file).unwrap();
+            let expected: Vec<_> = indices.iter().map(|&i| crate::scheduler::card_id(&rows[i])).collect();
+            assert_eq!(first.learned.ids(deck), expected);
+        }
+        assert_eq!(first.learned.pending("en-definitions"), [2809]);
+        assert_eq!(first.learned.pending("custom"), [1, 0]);
+        assert_eq!(first.learned.pending("en-ru"), [1]);
+        assert!(first.learned.ids("en-ru").is_empty() && first.learned.ids("custom").is_empty());
+        let stable = fs::read(data.join(FILE_NAME)).unwrap();
+        fs::remove_file(imports.join("EN-RU.JsOn")).unwrap();
+        let second = ProfileData::open(&data, Some(&shipped)).unwrap();
+        assert_eq!(second.stats.days["2025-12-01"].learned, 7);
+        assert_eq!(first.learned, second.learned);
+        assert_eq!(fs::read(data.join(FILE_NAME)).unwrap(), stable);
+        assert_eq!(fs::read(data.join("learned.json")).unwrap(), legacy);
+        assert_eq!(fs::read(data.join("stats.json")).unwrap(), stats);
+    }
+
     #[test]
     fn missing_files_default_without_creating_a_profile_directory() {
         let dir = tempfile::tempdir().unwrap();
@@ -206,7 +259,7 @@ mod tests {
         let stable = dir.path().join(FILE_NAME);
         let original = br#"{ "my-deck": [4, 0, 7], "missing": [999] }"#;
         fs::write(&legacy, original).unwrap();
-        let mut data = ProfileData::open(dir.path()).unwrap();
+        let mut data = ProfileData::open(dir.path(), None).unwrap();
         assert!(stable.exists());
         assert!(data.learned.ids("my-deck").is_empty());
         assert_eq!(data.learned.pending("my-deck"), [4, 0, 7]);
@@ -217,7 +270,7 @@ mod tests {
             1
         );
         save_json(&stable, &data.learned).unwrap();
-        let restarted = ProfileData::open(dir.path()).unwrap();
+        let restarted = ProfileData::open(dir.path(), None).unwrap();
         assert_eq!(restarted.learned.ids("my-deck"), &ids);
         assert_eq!(restarted.learned.pending("my-deck"), [4, 7]);
         assert_eq!(restarted.learned.pending("missing"), [999]);
@@ -231,13 +284,13 @@ mod tests {
         let stats = dir.path().join("stats.json");
         let stable = dir.path().join(FILE_NAME);
         fs::write(&stats, b"{").unwrap();
-        assert_eq!(ProfileData::open(dir.path()).unwrap_err().path, stats);
+        assert_eq!(ProfileData::open(dir.path(), None).unwrap_err().path, stats);
         assert!(!stable.exists());
         save_stats(&stats, &sample_stats()).unwrap();
         for invalid in [br#"{"version":9,"decks":{},"pending":{}}"#.as_slice(), b"{"] {
             fs::write(&stable, invalid).unwrap();
             let before = bytes(dir.path());
-            assert_eq!(ProfileData::open(dir.path()).unwrap_err().path, stable);
+            assert_eq!(ProfileData::open(dir.path(), None).unwrap_err().path, stable);
             assert_eq!(bytes(dir.path()), before);
         }
     }
