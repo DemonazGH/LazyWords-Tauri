@@ -6,11 +6,25 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+# Omit debug symbols to limit hosted-runner disk use; debug assertions stay enabled.
+env:
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -20,6 +34,36 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      - name: Install Node dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run JavaScript regression tests
+        run: npm test
+
       - name: Run Rust tests
-        run: cargo test
+        run: cargo test --locked
+        working-directory: src-tauri
+
+  windows-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Node dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run JavaScript regression tests
+        run: npm test
+
+      - name: Run Rust tests
+        run: cargo test --locked
         working-directory: src-tauri
