@@ -17,6 +17,13 @@
 
   <!-- ── SETTINGS TAB ─────────────────────────────────────── -->
   <section id="tab-settings" class="tab-panel active">
+    <aside id="legacy-notice" class="group legacy-notice" aria-labelledby="legacy-notice-title" hidden>
+      <strong id="legacy-notice-title" data-i18n="learned.notice.title">Your older learned marks are saved</strong>
+      <p id="legacy-notice-message"></p>
+      <button type="button" class="btn-secondary" id="legacy-notice-review" data-i18n="learned.notice.review">Review dictionaries</button>
+      <button type="button" class="btn-secondary" id="legacy-notice-dismiss" data-i18n="learned.notice.dismiss">Dismiss notice</button>
+      <span role="status" id="legacy-notice-status"></span>
+    </aside>
 
     <div class="group">
       <label class="group-title" data-i18n="settings.language">Interface language</label>
@@ -125,15 +132,20 @@
       <p id="learned-empty" class="hint" data-i18n="settings.learned.empty">No learned words. Use Ctrl+Shift+K to mark a word.</p>
       <div id="learned-legacy" hidden>
         <p id="learned-legacy-count" class="hint"></p>
+        <label for="legacy-deck" data-i18n="learned.legacy.deck">Dictionary to review</label>
+        <select id="legacy-deck"></select>
         <button id="btn-review-legacy" class="btn-secondary" type="button" data-i18n="learned.legacy.review" hidden>Review older markers</button>
       </div>
       <p id="learned-status" class="hint" role="status"></p>
       <dialog id="learned-legacy-dialog" class="settings-dialog" aria-labelledby="learned-legacy-title" aria-describedby="learned-legacy-description">
         <h2 id="learned-legacy-title" data-i18n="learned.legacy.review">Review older markers</h2>
+        <strong id="legacy-review-name"></strong>
+        <p data-i18n="learned.legacy.sample">Examples from the current file (up to five). Confirming links all matching marks in this dictionary, not just these examples.</p>
+        <ul id="legacy-preview"></ul>
         <p id="learned-legacy-description" data-i18n="learned.legacy.warning">Link these markers only if this dictionary is in the exact order it had when you marked the cards. If it was edited, reordered, or you are unsure, leave them pending.</p>
-        <form method="dialog">
+        <form id="legacy-review-form" method="dialog">
           <button class="btn-secondary" value="cancel" autofocus data-i18n="learned.legacy.cancel">Leave pending</button>
-          <button class="btn-secondary" value="confirm" data-i18n="learned.legacy.confirm">Link using this order</button>
+          <button id="legacy-review-confirm" class="btn-secondary" value="confirm" data-i18n="learned.legacy.confirm">Link using this order</button>
         </form>
       </dialog>
       <button id="btn-show-all" class="btn-text" style="display:none"></button>

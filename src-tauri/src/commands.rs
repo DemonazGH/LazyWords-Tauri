@@ -208,7 +208,7 @@ pub fn get_learned_list(state: State<'_, AppState>) -> Value {
         "dictId": dict_id, "words": words,
         "pendingTotal": learned.pending_count(),
         "pendingHere": pending_here,
-        "orderToken": (pending_here != 0).then(|| Learned::order_token(engine.card_ids()))
+        "pendingDecks": learned.pending_decks()
     })
 }
 
@@ -275,19 +275,93 @@ fn restore_markers(app: &AppHandle, state: &AppState, dict_id: &str, only_id: Op
     true
 }
 
+fn review_words(app: &AppHandle, id: &str) -> Option<Vec<crate::word_engine::WordEntry>> {
+    // Legacy IDs are profile data, not trusted paths. Only open a discovered deck.
+    if !get_all_dict_ids(app).iter().any(|known| known == id) { return None; }
+    if crate::quick_add::is_reserved(id) { return crate::quick_add::load_deck(app); }
+    load_review_source(&get_user_dicts_dir(app), &get_bundled_dicts_dir(app), id)
+}
+
+fn load_review_source(imports: &std::path::Path, bundled: &std::path::Path, id: &str) -> Option<Vec<crate::word_engine::WordEntry>> {
+    for dir in [imports, bundled] {
+        for ext in ["csv", "json", "xlsx"] {
+            let path = dir.join(format!("{id}.{ext}"));
+            match fs::symlink_metadata(&path) {
+                Ok(_) => return crate::dictionary_loader::load_dictionary(&path).ok(),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(_) => return None,
+            }
+        }
+    }
+    None
+}
+
+#[tauri::command]
+pub fn preview_legacy_learned(app: AppHandle, state: State<'_, AppState>, dict_id: String) -> Option<Value> {
+    let words = review_words(&app, &dict_id)?;
+    legacy_preview(&state.learned.lock().unwrap(), &dict_id, &words)
+}
+
+fn legacy_preview(learned: &Learned, dict_id: &str, words: &[crate::word_engine::WordEntry]) -> Option<Value> {
+    let ids: Vec<_> = words.iter().map(crate::scheduler::card_id).collect();
+    let rows = learned.pending(dict_id);
+    if rows.is_empty() || words.is_empty() { return None; }
+    let unique = crate::learned::unique_card_ids(&ids);
+    let sample: Vec<_> = rows.iter().copied()
+        .filter(|&i| ids.get(i).is_some_and(|id| unique.contains(id.as_str())))
+        .take(5).map(|i| serde_json::json!({
+            "row": i + 1, "term": words[i].term, "definition": words[i].definition
+        })).collect();
+    Some(serde_json::json!({"orderToken": Learned::order_token(&ids), "sample": sample}))
+}
+
+#[cfg(test)]
+mod legacy_review_tests {
+    use super::*;
+
+    #[test]
+    fn preview_uses_the_import_and_confirming_a_stale_order_or_invalid_override_never_links() {
+        let root = tempfile::tempdir().unwrap();
+        let imports = root.path().join("imports");
+        let bundled = root.path().join("bundled");
+        fs::create_dir(&imports).unwrap();
+        fs::create_dir(&bundled).unwrap();
+        fs::write(bundled.join("en-ru.csv"), "term,definition\none,original\n").unwrap();
+        let path = imports.join("en-ru.json");
+        let write = |terms: &[&str]| {
+            let rows: Vec<_> = terms.iter().map(|t| serde_json::json!({"term":t,"definition":"custom"})).collect();
+            fs::write(&path, serde_json::to_vec(&rows).unwrap()).unwrap();
+        };
+        write(&["a", "a", "b"]);
+        let mut learned = Learned::from_legacy(HashMap::from([("en-ru".into(), vec![0, 2, 20])]));
+        let read = || load_review_source(&imports, &bundled, "en-ru");
+        let preview = legacy_preview(&learned, "en-ru", &read().unwrap()).unwrap();
+        assert_eq!(preview["sample"], serde_json::json!([{"row":3,"term":"b","definition":"custom"}]));
+        write(&["b", "a", "a"]);
+        let ids: Vec<_> = read().unwrap().iter().map(crate::scheduler::card_id).collect();
+        assert_eq!(learned.resolve("en-ru", &ids, preview["orderToken"].as_str().unwrap()), 0);
+        assert_eq!(learned.pending("en-ru"), [0, 2, 20]);
+        fs::write(path, "{").unwrap();
+        assert!(read().is_none());
+    }
+}
+
 #[tauri::command]
 pub fn resolve_legacy_learned(app: AppHandle, state: State<'_, AppState>, dict_id: String, order_token: String) -> usize {
     let (count, all_learned) = {
         let settings = state.settings.lock().unwrap();
-        if dict_id.is_empty() || settings.active_dictionary != dict_id { return 0; }
+        let Some(words) = review_words(&app, &dict_id) else { return 0 };
+        let ids: Vec<_> = words.iter().map(crate::scheduler::card_id).collect();
+        let active = settings.active_dictionary == dict_id;
         let mut learned = state.learned.lock().unwrap();
         let mut engine = state.word_engine.lock().unwrap();
+        if active && engine.card_ids() != ids.as_slice() { return 0; }
         let mut next = learned.clone();
-        let count = next.resolve(&dict_id, engine.card_ids(), &order_token);
+        let count = next.resolve(&dict_id, &ids, &order_token);
         if count == 0 || !commit_learned(&app, &mut learned, next) { return 0; }
-        engine.set_learned_ids(learned.ids(&dict_id));
-        let all_learned = engine.unlearned_cards().next().is_none();
-        *state.all_learned.lock().unwrap() = all_learned;
+        if active { engine.set_learned_ids(learned.ids(&dict_id)); }
+        let all_learned = active && engine.unlearned_cards().next().is_none();
+        if active { *state.all_learned.lock().unwrap() = all_learned; }
         (count, all_learned)
     };
     if all_learned { state.all_learned_notify.notify_one(); }

@@ -27,16 +27,17 @@ pub struct AppState {
     pub tray: Mutex<Option<tauri::tray::TrayIcon>>,
 }
 
-pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> Result<AppState, crate::profile_data::LoadError> {
+pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> Result<(AppState, bool), crate::profile_data::LoadError> {
     let bundled = app.path().resolve("dictionaries", tauri::path::BaseDirectory::Resource).ok();
-    let crate::profile_data::ProfileData { learned, stats, .. } =
-        crate::profile_data::ProfileData::open(app_dir, bundled.as_deref())?;
+    let profile = crate::profile_data::ProfileData::open(app_dir, bundled.as_deref())?;
+    let show_notice = profile.newly_pending() && !settings.legacy_notice_dismissed;
+    let crate::profile_data::ProfileData { learned, stats, .. } = profile;
 
     let engine = WordEngine::new();
     
     let i18n = crate::i18n::I18n::for_app(app, &settings.language);
     
-    Ok(AppState {
+    Ok((AppState {
         settings: Mutex::new(settings),
         stats_tracker: Mutex::new(StatsTracker::new(stats)),
         learned: Mutex::new(learned),
@@ -52,5 +53,5 @@ pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> Result
         all_learned_notify: tokio::sync::Notify::new(),
         manual_trigger: tokio::sync::Notify::new(),
         tray: Mutex::new(None),
-    })
+    }, show_notice))
 }
