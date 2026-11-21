@@ -5,6 +5,7 @@ const suggestion = document.getElementById('quick-add-suggestion');
 const preview = document.getElementById('quick-add-preview');
 const status = document.getElementById('quick-add-status');
 const save = document.getElementById('quick-add-save');
+const practice = document.getElementById('quick-add-practice');
 const cancel = document.getElementById('quick-add-cancel');
 const useSuggestion = document.getElementById('quick-add-use');
 
@@ -15,6 +16,7 @@ const messages = {
   'quickAdd.saveError': 'Could not save to My Words. Your draft is still here.',
   'quickAdd.closeError': 'Could not close Quick Add.',
   'quickAdd.saved': 'Saved to My Words.',
+  'quickAdd.savedWithoutSwitch': 'Card saved. Your practice dictionary did not change. You can select My Words in Settings.',
 };
 let strings = {};
 let draft = null;
@@ -62,7 +64,7 @@ function refreshDraft() {
 
 function setBusy(value) {
   busy = value;
-  for (const field of [term, definition, save, cancel, useSuggestion]) {
+  for (const field of [term, definition, save, practice, cancel, useSuggestion]) {
     field.disabled = value;
   }
 }
@@ -103,8 +105,12 @@ form.addEventListener('submit', async event => {
   setBusy(true);
   showStatus();
   try {
-    await window.api.saveQuickCard(front, back);
+    const outcome = await window.api.saveQuickCard(front, back, event.submitter === practice);
     resetForm();
+    if (outcome === 'savedWithoutSwitch') {
+      showStatus('quickAdd.savedWithoutSwitch');
+      return;
+    }
     try {
       await window.api.closeQuickAdd();
     } catch {

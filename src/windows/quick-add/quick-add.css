@@ -44,5 +44,5 @@ button:disabled { cursor: default; opacity: .65; }
 
 #quick-add-status { margin: 0; color: #fda4af; }
 #quick-add-status:empty { display: none; }
-.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 #quick-add-save { background: #4338ca; border-color: #818cf8; font-weight: 600; }

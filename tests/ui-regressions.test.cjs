@@ -98,8 +98,8 @@ test('Quick Add serializes saves, retains rejected drafts and closes on success'
   let finish;
   let closes = 0;
   const app = renderer('src/windows/quick-add/quick-add.js', {
-    saveQuickCard: (term, definition) => {
-      saves.push([term, definition]);
+    saveQuickCard: (term, definition, practice) => {
+      saves.push([term, definition, practice]);
       return new Promise((resolve, reject) => { finish = { resolve, reject }; });
     },
     closeQuickAdd: async () => { closes++; },
@@ -107,15 +107,17 @@ test('Quick Add serializes saves, retains rejected drafts and closes on success'
   const term = app.elements.get('quick-add-term');
   const definition = app.elements.get('quick-add-definition');
   const message = app.elements.get('quick-add-status');
-  const submit = () => app.elements.get('quick-add-form').listeners.submit({ preventDefault() {} });
+  const submit = submitter => app.elements.get('quick-add-form').listeners.submit({ submitter, preventDefault() {} });
   term.value = '  term  ';
   definition.value = '   ';
   await submit();
   assert.equal(saves.length, 0);
   definition.value = '  definition  ';
   const first = submit();
-  await submit();
-  assert.deepEqual(saves, [['term', 'definition']]);
+  const practice = app.elements.get('quick-add-practice');
+  assert.equal(practice.disabled, true);
+  await submit(practice);
+  assert.deepEqual(saves, [['term', 'definition', false]]);
   finish.reject('quickAdd.duplicate');
   await first;
   assert.match(message.textContent, /already in My Words/);
@@ -123,13 +125,39 @@ test('Quick Add serializes saves, retains rejected drafts and closes on success'
   assert.equal(closes, 0);
 
   definition.value = ' another definition ';
-  const second = submit();
+  const second = submit(practice);
   finish.resolve();
   await second;
   assert.equal(closes, 1);
-  assert.deepEqual(saves[1], ['term', 'another definition']);
+  assert.deepEqual(saves[1], ['term', 'another definition', true]);
   assert.equal(term.value, '');
   assert.equal(definition.value, '');
+});
+
+test('Quick Add distinguishes a failed switch from a failed card save', async () => {
+  const app = renderer('src/windows/quick-add/quick-add.js', {
+    saveQuickCard: async (_term, _definition, practice) => {
+      assert.equal(practice, true);
+      return 'savedWithoutSwitch';
+    },
+    closeQuickAdd: () => assert.fail('Keep the saved-card warning visible'),
+  });
+  app.elements.get('quick-add-term').value = 'saved';
+  app.elements.get('quick-add-definition').value = 'once';
+  await app.elements.get('quick-add-form').listeners.submit({
+    submitter: app.elements.get('quick-add-practice'), preventDefault() {},
+  });
+  assert.match(app.elements.get('quick-add-status').textContent, /Card saved.*did not change/);
+  assert.equal(app.elements.get('quick-add-term').value, '');
+  assert.equal(app.elements.get('quick-add-practice').disabled, false);
+});
+
+test('Quick Add keeps ordinary Save as the default HTML submit button', () => {
+  const html = readFileSync(path.join(__dirname, '../src/windows/quick-add/quick-add.html'), 'utf8');
+  const buttons = html.match(/<button\b[^>]*>/gi)
+    .filter(tag => !/\btype="(?:button|reset)"/i.test(tag));
+  assert.deepEqual(buttons.map(tag => tag.match(/\bid="([^"]+)"/)[1]),
+    ['quick-add-save', 'quick-add-practice']);
 });
 
 test('debounce preserves patches from different sliders', async () => {

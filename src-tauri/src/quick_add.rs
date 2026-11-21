@@ -25,6 +25,13 @@ pub struct Draft {
     suggestion: Option<String>,
 }
 
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SaveOutcome {
+    Saved,
+    SavedWithoutSwitch,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MyWord {
@@ -251,12 +258,15 @@ pub fn save_quick_card(
     state: State<'_, AppState>,
     term: String,
     definition: String,
-) -> Result<(), String> {
+    practice: Option<bool>,
+) -> Result<SaveOutcome, String> {
     if window.label() != WINDOW {
         return Err("Quick Add window required".into());
     }
     let card = clean_card(&term, &definition)?;
-    apply_deck_change(window.app_handle(), &state, |path| append_card(path, card).map(Some))
+    apply_deck_change(window.app_handle(), &state, practice.unwrap_or(false), |path| {
+        append_card(path, card).map(Some)
+    })
 }
 
 #[tauri::command]
@@ -279,7 +289,7 @@ pub fn edit_my_word(
 ) -> Result<(), String> {
     let app = settings_app(&window)?;
     let card = clean_card(&term, &definition)?;
-    apply_deck_change(app, &state, |path| change_card(path, &card_id, Some(card)))
+    apply_deck_change(app, &state, false, |path| change_card(path, &card_id, Some(card))).map(|_| ())
 }
 
 #[tauri::command]
@@ -289,7 +299,7 @@ pub fn delete_my_word(
     card_id: String,
 ) -> Result<(), String> {
     let app = settings_app(&window)?;
-    apply_deck_change(app, &state, |path| change_card(path, &card_id, None))
+    apply_deck_change(app, &state, false, |path| change_card(path, &card_id, None)).map(|_| ())
 }
 
 fn settings_app(window: &WebviewWindow) -> Result<&AppHandle, String> {
@@ -302,16 +312,22 @@ fn settings_app(window: &WebviewWindow) -> Result<&AppHandle, String> {
 fn apply_deck_change(
     app: &AppHandle,
     state: &AppState,
+    practice: bool,
     change: impl FnOnce(&Path) -> Result<Option<Vec<WordEntry>>, &'static str>,
-) -> Result<(), String> {
+) -> Result<SaveOutcome, String> {
     let path = deck_path(app).map_err(|_| STORAGE_ERROR)?;
-    let (active, switched) = {
+    let (active, switched, outcome) = {
         // Serialize deck writes and active-dictionary changes.
         let mut settings = state.settings.lock().unwrap();
-        let Some(mut words) = change(&path)? else { return Ok(()) };
+        let Some(mut words) = change(&path)? else { return Ok(SaveOutcome::Saved) };
+        let previous = settings.active_dictionary.clone();
+        let outcome = if practice {
+            select_saved_deck(&path.with_file_name("settings.json"), &mut settings)
+        } else {
+            SaveOutcome::Saved
+        };
         let active = settings.active_dictionary == DECK_ID;
-        let switched = active && words.is_empty();
-        if switched {
+        if active && words.is_empty() {
             let fallback = crate::commands::get_all_dict_ids(app).into_iter().find_map(|id| {
                 let words = crate::commands::load_dictionary_by_id(app, &id)?;
                 (!words.is_empty()).then_some((id, words))
@@ -330,18 +346,37 @@ fn apply_deck_change(
             *state.all_learned.lock().unwrap() = false;
         }
         *state.all_dicts_done.lock().unwrap() = false;
-        (active, switched.then(|| settings.clone()))
+        (active, (previous != settings.active_dictionary).then(|| settings.clone()), outcome)
     };
     if let Some(settings) = switched {
         let _ = app.emit("update-settings", &settings);
         let _ = app.emit("dict-auto-switched", serde_json::json!({ "newId": settings.active_dictionary }));
+        if practice {
+            if let Some(onboarding) = app.get_webview_window("onboarding") {
+                let _ = onboarding.destroy();
+            }
+        }
     }
     let _ = app.emit("dict-list-updated", ());
     if active {
         let _ = app.emit("stats-updated", ());
     }
     crate::tray::refresh_tray(app);
-    Ok(())
+    Ok(outcome)
+}
+
+fn select_saved_deck(path: &Path, settings: &mut crate::settings::Settings) -> SaveOutcome {
+    if settings.active_dictionary == DECK_ID { return SaveOutcome::Saved; }
+    let mut next = settings.clone();
+    next.active_dictionary = DECK_ID.into();
+    next.first_launch = false;
+    // The CSV already committed. A settings failure must not invite a duplicate save.
+    if let Err(error) = crate::settings::try_save_settings(path, &next) {
+        eprintln!("Card saved but could not select My Words: {error}");
+        return SaveOutcome::SavedWithoutSwitch;
+    }
+    *settings = next;
+    SaveOutcome::Saved
 }
 
 #[cfg(test)]
@@ -349,6 +384,29 @@ mod tests {
     use super::*;
     use crate::scheduler::card_id;
     use crate::word_engine::WordEngine;
+
+    #[test]
+    fn practice_selection_only_changes_memory_after_settings_are_saved() {
+        let dir = tempfile::tempdir().unwrap();
+        let settings_path = dir.path().join("settings.json");
+        let deck = dir.path().join("my-words.csv");
+        let mut settings = crate::settings::Settings {
+            active_dictionary: "original".into(), language: "ru".into(),
+            ..Default::default()
+        };
+        append_card(&deck, clean_card("one", "a number").unwrap()).unwrap();
+        fs::create_dir(&settings_path).unwrap();
+        assert_eq!(select_saved_deck(&settings_path, &mut settings), SaveOutcome::SavedWithoutSwitch);
+        assert_eq!(settings.active_dictionary, "original");
+        assert!(settings.first_launch);
+        fs::remove_dir(&settings_path).unwrap();
+        assert_eq!(select_saved_deck(&settings_path, &mut settings), SaveOutcome::Saved);
+        let restored = crate::settings::load_settings(&settings_path).unwrap();
+        assert_eq!(restored.active_dictionary, DECK_ID);
+        assert_eq!(restored.language, "ru");
+        assert!(!restored.first_launch);
+        assert_eq!(read_deck(&deck).unwrap().len(), 1);
+    }
 
     #[test]
     fn appending_preserves_card_ids_and_quotes_multiline_unicode() {
