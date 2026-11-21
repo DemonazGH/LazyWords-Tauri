@@ -195,8 +195,8 @@ pub fn quick_add_suggestions(
     let index = INDEX.get_or_init(|| {
         SuggestionIndex::load(&crate::commands::get_bundled_dicts_dir(window.app_handle()))
     });
-    let settings = state.settings.lock().unwrap();
-    index.lookup(&settings.active_dictionary, term)
+    let i18n = state.i18n.lock().unwrap();
+    index.lookup(&i18n.current_locale, term)
 }
 
 pub fn create_window(app: &App) -> tauri::Result<()> {

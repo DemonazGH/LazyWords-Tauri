@@ -11,7 +11,6 @@
   "quickAdd.useSuggestion": "Подставить готовый ответ",
   "quickAdd.englishDefinition": "Определение на английском",
   "quickAdd.russianTranslation": "Перевод на русский",
-  "quickAdd.verbForms": "Формы глагола",
   "quickAdd.cancel": "Отмена",
   "quickAdd.save": "Сохранить карточку",
   "quickAdd.invalidTerm": "Введите слово в одну строку (до 160 символов).",

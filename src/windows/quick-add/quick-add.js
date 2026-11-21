@@ -18,12 +18,10 @@ const messages = {
   'quickAdd.savedWithoutSwitch': 'Card saved. Your practice dictionary did not change. You can select My Words in Settings.',
   'quickAdd.englishDefinition': 'English definition',
   'quickAdd.russianTranslation': 'Russian translation',
-  'quickAdd.verbForms': 'Verb forms',
 };
 const sourceLabels = new Map([
   ['en-definitions', 'quickAdd.englishDefinition'],
   ['en-ru', 'quickAdd.russianTranslation'],
-  ['en-irregular-verbs', 'quickAdd.verbForms'],
 ]);
 let strings = {};
 let choices = [];
@@ -169,9 +167,19 @@ form.addEventListener('submit', async event => {
 });
 
 async function init() {
-  await window.api.onQuickAddOpened(() => refreshDraft().catch(console.error));
+  // A hidden WebView can miss the first open notification. Taking a draft is
+  // single-use, so focus and visibility can safely recover it without resetting edits.
+  const takePending = () => refreshDraft().catch(console.error);
+  window.addEventListener('focus', takePending);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return takePending();
+  });
+  await window.api.onQuickAddOpened(takePending);
+  await window.api.onLocaleUpdated(({ strings }) => {
+    applyLocale(strings);
+    return lookupSuggestions(true);
+  });
   await refreshDraft().catch(console.error);
-  await window.api.onLocaleUpdated(({ strings }) => applyLocale(strings));
   try {
     applyLocale((await window.api.getLocale()).strings);
   } catch (error) {
