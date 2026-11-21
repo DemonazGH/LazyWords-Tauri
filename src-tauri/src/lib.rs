@@ -471,6 +471,7 @@ pub fn run() {
             card_layout::get_card_layout,
             card_layout::resize_card,
             quick_add::take_quick_add_draft,
+            quick_add::quick_add_suggestions,
             quick_add::save_quick_card,
             quick_add::close_quick_add,
             quick_add::get_my_words,

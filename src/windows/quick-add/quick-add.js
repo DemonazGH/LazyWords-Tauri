@@ -2,12 +2,11 @@ const form = document.getElementById('quick-add-form');
 const term = document.getElementById('quick-add-term');
 const definition = document.getElementById('quick-add-definition');
 const suggestion = document.getElementById('quick-add-suggestion');
-const preview = document.getElementById('quick-add-preview');
+const options = document.getElementById('quick-add-options');
 const status = document.getElementById('quick-add-status');
 const save = document.getElementById('quick-add-save');
 const practice = document.getElementById('quick-add-practice');
 const cancel = document.getElementById('quick-add-cancel');
-const useSuggestion = document.getElementById('quick-add-use');
 
 const messages = {
   'quickAdd.invalidTerm': 'Enter a term on one line.',
@@ -17,9 +16,19 @@ const messages = {
   'quickAdd.closeError': 'Could not close Quick Add.',
   'quickAdd.saved': 'Saved to My Words.',
   'quickAdd.savedWithoutSwitch': 'Card saved. Your practice dictionary did not change. You can select My Words in Settings.',
+  'quickAdd.englishDefinition': 'English definition',
+  'quickAdd.russianTranslation': 'Russian translation',
+  'quickAdd.verbForms': 'Verb forms',
 };
+const sourceLabels = new Map([
+  ['en-definitions', 'quickAdd.englishDefinition'],
+  ['en-ru', 'quickAdd.russianTranslation'],
+  ['en-irregular-verbs', 'quickAdd.verbForms'],
+]);
 let strings = {};
-let draft = null;
+let choices = [];
+let lookupTimer;
+let lookupVersion = 0;
 let busy = false;
 let openQueue = Promise.resolve();
 
@@ -28,23 +37,66 @@ function applyLocale(locale) {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     if (strings[el.dataset.i18n]) el.textContent = strings[el.dataset.i18n];
   });
+  renderSuggestions();
 }
 
 function showStatus(key) {
   status.textContent = strings[key] || messages[key] || '';
 }
 
-function renderSuggestion() {
-  const matches = term.value.trim().toLowerCase() === draft?.term.toLowerCase();
-  preview.textContent = matches ? draft.suggestion || '' : '';
-  suggestion.hidden = !preview.textContent;
+function renderSuggestions() {
+  options.replaceChildren();
+  suggestion.hidden = choices.length === 0;
+  const version = lookupVersion;
+  for (const { source, answer } of choices) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    const label = document.createElement('strong');
+    const key = sourceLabels.get(source);
+    label.textContent = strings[key] || messages[key];
+    const preview = document.createElement('span');
+    preview.textContent = answer;
+    button.appendChild(label);
+    button.appendChild(preview);
+    button.addEventListener('click', () => {
+      if (busy || version !== lookupVersion) return;
+      definition.value = answer;
+      definition.focus();
+    });
+    options.appendChild(button);
+  }
+}
+
+function clearSuggestions() {
+  clearTimeout(lookupTimer);
+  lookupVersion++;
+  choices = [];
+  renderSuggestions();
+}
+
+function lookupSuggestions(immediate = false) {
+  clearSuggestions();
+  const query = term.value.trim();
+  if (!query) return;
+  const version = lookupVersion;
+  async function lookup() {
+    try {
+      const rows = await window.api.quickAddSuggestions(query);
+      if (version !== lookupVersion) return;
+      choices = rows.filter(row => sourceLabels.has(row.source) && row.answer);
+      renderSuggestions();
+    } catch {
+      // An unavailable suggestion must never block entering an answer manually.
+    }
+  }
+  if (immediate) return lookup();
+  lookupTimer = setTimeout(lookup, 180);
 }
 
 function resetForm() {
-  draft = null;
   term.value = '';
   definition.value = '';
-  renderSuggestion();
+  clearSuggestions();
   showStatus();
 }
 
@@ -54,17 +106,16 @@ function refreshDraft() {
     const next = await window.api.takeQuickAddDraft();
     if (!next) return;
     resetForm();
-    draft = next;
     term.value = next.term;
-    renderSuggestion();
     (next.term ? definition : term).focus();
+    if (next.term) void lookupSuggestions(true);
   });
   return openQueue;
 }
 
 function setBusy(value) {
   busy = value;
-  for (const field of [term, definition, save, practice, cancel, useSuggestion]) {
+  for (const field of [term, definition, save, practice, cancel, suggestion]) {
     field.disabled = value;
   }
 }
@@ -79,13 +130,7 @@ async function dismiss() {
   }
 }
 
-term.addEventListener('input', renderSuggestion);
-useSuggestion.addEventListener('click', () => {
-  if (!suggestion.hidden && !busy) {
-    definition.value = preview.textContent;
-    definition.focus();
-  }
-});
+term.addEventListener('input', () => lookupSuggestions());
 cancel.addEventListener('click', dismiss);
 form.addEventListener('keydown', event => {
   if (event.key === 'Escape') {

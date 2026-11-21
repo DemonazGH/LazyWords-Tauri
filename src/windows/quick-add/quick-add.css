@@ -29,18 +29,25 @@ button:disabled { cursor: default; opacity: .65; }
 :focus-visible { outline: 2px solid #a5b4fc; outline-offset: 2px; }
 
 .suggestion {
-  padding: 8px 10px;
+  margin: 0;
+  min-width: 0;
+  padding: 4px 8px 8px;
+  border: 0;
   border-left: 3px solid #818cf8;
   background: #222229;
 }
 
-.suggestion p {
-  margin: 0 0 6px;
-  max-height: 3.5em;
-  overflow: auto;
+.suggestion legend { color: #c7c7d2; padding: 0 4px; }
+#quick-add-options { display: grid; gap: 4px; }
+.suggestion button {
+  display: grid;
+  gap: 2px;
+  text-align: start;
+  padding: 5px 8px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.suggestion button strong { color: #c7d2fe; font-size: .85em; }
 
 #quick-add-status { margin: 0; color: #fda4af; }
 #quick-add-status:empty { display: none; }
