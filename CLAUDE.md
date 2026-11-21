@@ -61,7 +61,7 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 - `learned` - deck-scoped card IDs and separately preserved legacy markers; learned data and statistics must load successfully before AppState exists
 - `is_paused`, `all_learned`, `all_dicts_done` – runtime state
 - `all_learned_notify` – wakes card-duration and interval waits when completion becomes pending
-- `manual_trigger` – interrupts timer pacing when `Ctrl+Shift+N` / tray "Next" shows a card manually
+- `manual_trigger` – interrupts timer pacing when the Next shortcut or tray action shows a card manually
 - `tray` – `Option<TrayIcon>` handle for updating icon and menu from anywhere
 
 **Timer loop** (`timer.rs`) — the core async loop:
@@ -78,12 +78,13 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 - All labels localized via `t()` — menu rebuilt on language change
 - Quit saves stats/settings before `app.exit(0)`; learned changes are saved at the moment of mutation
 
-**Global shortcuts** (`lib.rs`):
+**Global shortcuts** (`hotkeys.rs`; each is editable and independently switchable in Settings):
 - `Ctrl+Shift+W` – toggle settings window (show/hide pre-created window)
 - `Ctrl+Shift+P` – pause/resume; updates tray icon and menu
 - `Ctrl+Shift+N` – implicit unpause + show next card immediately; records `shown` stat; fires `manual_trigger` to reset timer interval
 - `Ctrl+Shift+K` – emits `mark-known-shortcut`; card.js handles it
-- `Ctrl+Shift+A` opens Quick Add. On Windows, a single-line clipboard selection can prefill the term.
+- Quick Add is unbound by default; its tray item always works when the window is available. On Windows, single-line clipboard text can prefill the term.
+- Profiles without `hotkeys` retain the four original bindings above. Disabled bindings keep their keys. Do not send `hotkeys` via generic settings patches: the dedicated Settings-window command validates, reserves and saves one action at a time.
 - Global shortcuts dismiss the onboarding window if it's open.
 - Registration errors are logged per shortcut and shown in a localized warning; the tray and settings remain usable.
 

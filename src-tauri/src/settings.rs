@@ -7,6 +7,8 @@ use std::path::Path;
 #[serde(rename_all = "camelCase")]
 // New fields need an explicit deserialization default for existing profiles.
 pub struct Settings {
+    #[serde(default = "crate::hotkeys::defaults")]
+    pub hotkeys: crate::hotkeys::Hotkeys,
     pub position: String,
     pub font_size: f32,
     pub show_duration: f32,
@@ -29,6 +31,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            hotkeys: crate::hotkeys::defaults(),
             position: "center".to_string(),
             font_size: 22.0,
             show_duration: 4.0,
@@ -223,6 +226,7 @@ mod tests {
             assert!(!settings.needs_onboarding());
             assert_eq!(settings.msix_startup_initialized, startup_initialized);
             let mut restored = serde_json::to_value(settings).unwrap();
+            assert_eq!(restored.as_object_mut().unwrap().remove("hotkeys"), Some(serde_json::to_value(crate::hotkeys::defaults()).unwrap()));
             assert_eq!(restored.as_object_mut().unwrap().remove("answerDelay"), Some(0.into()));
             assert_eq!(restored.as_object_mut().unwrap().remove("smartScheduling"), Some(false.into()));
             assert_eq!(restored.as_object_mut().unwrap().remove("legacyNoticeDismissed"), Some(false.into()));

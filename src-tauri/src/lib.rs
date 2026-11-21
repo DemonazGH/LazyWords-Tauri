@@ -1,4 +1,5 @@
 mod settings;
+mod hotkeys;
 mod stats;
 mod word_engine;
 mod dictionary_loader;
@@ -20,7 +21,6 @@ mod scheduler;
 mod autostart_cleanup_tests;
 
 use tauri::Manager;
-use tauri::Emitter;
 
 // ── Window positioning (multi-monitor aware) ──────────────────────────────────
 
@@ -162,7 +162,8 @@ pub fn run() {
             Some(vec![]),
         ))
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .manage(hotkeys::Runtime::default())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().with_handler(hotkeys::handle).build())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?.join("data");
             let settings_path = data_dir.join("settings.json");
@@ -328,114 +329,7 @@ pub fn run() {
                 .build();
             }
 
-            // ── Global shortcuts ──
-            use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
-            use std::str::FromStr;
-
-            let ctrl_shift_w = Shortcut::from_str("ctrl+shift+w").unwrap();
-            let ctrl_shift_p = Shortcut::from_str("ctrl+shift+p").unwrap();
-            let ctrl_shift_n = Shortcut::from_str("ctrl+shift+n").unwrap();
-            let ctrl_shift_k = Shortcut::from_str("ctrl+shift+k").unwrap();
-            let ctrl_shift_a = Shortcut::from_str("ctrl+shift+a").unwrap();
-
-            let shortcuts = [
-                ctrl_shift_w.clone(),
-                ctrl_shift_p.clone(),
-                ctrl_shift_n.clone(),
-                ctrl_shift_k.clone(),
-                ctrl_shift_a.clone(),
-            ];
-
-            let mut failed_shortcuts = Vec::new();
-            for sc in shortcuts {
-                let shortcut_name = sc.to_string();
-                let w = ctrl_shift_w.clone();
-                let p = ctrl_shift_p.clone();
-                let n = ctrl_shift_n.clone();
-                let k = ctrl_shift_k.clone();
-                let a = ctrl_shift_a.clone();
-                if sc == a && app.get_webview_window("quick-add").is_none() {
-                    continue;
-                }
-
-                let result = app.handle().global_shortcut().on_shortcut(sc, move |app, shortcut, event| {
-                    if event.state != ShortcutState::Pressed { return; }
-
-                    if shortcut == &w {
-                        // Dismiss onboarding if it's open
-                        if let Some(ob) = app.get_webview_window("onboarding") {
-                            let _ = ob.close();
-                        }
-                        if let Some(window) = app.get_webview_window("settings") {
-                            if window.is_visible().unwrap_or(false) {
-                                let _ = window.hide();
-                                let _ = window.set_skip_taskbar(true);
-                            } else {
-                                center_on_cursor_monitor(&window);
-                                let _ = window.set_skip_taskbar(false);
-                                let _ = window.unminimize();
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                            }
-                        }
-
-                    } else if shortcut == &p {
-                        // Dismiss onboarding
-                        if let Some(ob) = app.get_webview_window("onboarding") {
-                            let _ = ob.close();
-                        }
-                        {
-                            let state = app.state::<crate::state::AppState>();
-                            let mut paused = state.is_paused.lock().unwrap();
-                            *paused = !*paused;
-                        }
-                        tray::refresh_tray(app);
-
-                    } else if shortcut == &n {
-                        // Dismiss onboarding; implicit unpause
-                        if let Some(ob) = app.get_webview_window("onboarding") {
-                            let _ = ob.close();
-                        }
-                        let state = app.state::<crate::state::AppState>();
-                        // Implicit unpause so timer resumes
-                        *state.is_paused.lock().unwrap() = false;
-
-                        let (dict_id, entry) = scheduler::select_next(&state);
-                        if let Some(word) = entry {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let pos = state.settings.lock().unwrap().position.clone();
-                                reposition_window(&window, &pos);
-                            }
-                            // Record shown stat
-                            {
-                                let mut tracker = state.stats_tracker.lock().unwrap();
-                                tracker.record_shown();
-                                commands::save_stats_to_disk(app, &tracker.stats);
-                            }
-                            let _ = app.emit("stats-updated", ());
-                            timer::emit_word(app, &word, &dict_id);
-                            // Signal timer to reset its interval (prevents double card)
-                            state.manual_trigger.notify_one();
-                        }
-
-                    } else if shortcut == &k {
-                        // Dismiss onboarding; card.js handles the actual mark-learned
-                        if let Some(ob) = app.get_webview_window("onboarding") {
-                            let _ = ob.close();
-                        }
-                        let _ = app.emit("mark-known-shortcut", ());
-                    } else if shortcut == &a {
-                        if let Some(ob) = app.get_webview_window("onboarding") {
-                            let _ = ob.close();
-                        }
-                        quick_add::open(app);
-                    }
-                });
-                if let Err(error) = result {
-                    eprintln!("Could not register {shortcut_name}: {error}");
-                    failed_shortcuts.push(shortcut_name);
-                }
-            }
+            let failed_shortcuts = hotkeys::initialize(app.handle());
             if !failed_shortcuts.is_empty() {
                 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
                 let message = app.state::<state::AppState>().i18n.lock().unwrap()
@@ -455,6 +349,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
+            hotkeys::get_hotkeys,
+            hotkeys::set_hotkey,
             commands::save_settings,
             commands::complete_onboarding,
             commands::get_locale,
