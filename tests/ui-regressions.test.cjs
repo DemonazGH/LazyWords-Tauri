@@ -220,29 +220,86 @@ test('My Words deletion only runs for the explicit confirm button', async () => 
 
 test('legacy marker review never links on close without a fresh confirmation', async () => {
   const calls = [];
-  let response = { dictId: 'deck', words: [], pendingTotal: 3, pendingHere: 2, orderToken: 'order-a' };
+  const response = { dictId: 'deck', words: [], pendingTotal: 3, pendingHere: 2, pendingDecks: { deck: 2, import: 1 } };
+  let token = 'order-a';
   const app = renderer('src/windows/settings/settings.js', {
     getLearnedList: async () => response,
+    previewLegacyLearned: async () => ({orderToken: token, sample: [{ row: 2, term: '<term>', definition: 'answer' }]}),
     resolveLegacyLearned: async (...args) => { calls.push(args); return 0; },
   });
   app.run('currentSettings.activeDictionary = "deck"');
   await app.run('loadLearnedList()');
   const dialog = app.elements.get('learned-legacy-dialog');
   const button = app.elements.get('btn-review-legacy');
-  assert.match(app.elements.get('learned-legacy-count').textContent, /3 \(2 in this dictionary\)/);
-  button.listeners.click();
+  assert.match(app.elements.get('learned-legacy-count').textContent, /3 \(2 in the active dictionary\)/);
+  app.elements.get('legacy-notice-review').listeners.click();
+  const select = app.elements.get('legacy-deck');
+  assert.equal(select.focused, true);
+  select.value = 'import';
+  await button.listeners.click();
+  assert.equal(app.elements.get('legacy-preview').children[0].textContent, '#2: <term> · answer');
   assert.equal(dialog.open, true);
-  await dialog.listeners.close();
+  const submit = id => app.elements.get('legacy-review-form').listeners.submit({ submitter: { id } });
+  await submit('cancel');
   assert.deepEqual(calls, []);
 
-  button.listeners.click();
-  response = { ...response, orderToken: 'order-b' };
+  dialog.open = false;
+  await button.listeners.click();
+  dialog.listeners.cancel();
+  await submit('legacy-review-confirm');
+  assert.deepEqual(calls, [], 'an escaped preview no longer grants confirmation');
+  dialog.open = false;
+  await button.listeners.click();
+  token = 'order-b';
   await app.run('loadLearnedList()');
-  dialog.returnValue = 'confirm';
-  await dialog.listeners.close();
-  assert.deepEqual(calls, [['deck', 'order-a']], 'only the reviewed order can be linked');
-  assert.equal(dialog.returnValue, '');
+  await submit('legacy-review-confirm');
+  await submit('legacy-review-confirm');
+  assert.deepEqual(calls, [['import', 'order-a']], 'only the reviewed deck and order can be linked');
+  assert.equal(app.run('currentSettings.activeDictionary'), 'deck');
   assert.match(app.elements.get('learned-status').textContent, /remain pending/);
+});
+
+test('dismissing the notice hides no pending records and does not change practice decks', async () => {
+  const writes = [];
+  const app = renderer('src/windows/settings/settings.js', {
+    getLearnedList: async () => ({ dictId: 'practice', words: [], pendingTotal: 3, pendingDecks: { missing: 3 } }),
+    saveSettings: async patch => { writes.push(patch); return writes.length > 1; },
+    previewLegacyLearned: async () => null,
+  });
+  app.run('currentSettings.activeDictionary = "practice"');
+  await app.run('loadLearnedList()');
+  assert.equal(app.elements.get('legacy-notice').hidden, false);
+  await app.elements.get('btn-review-legacy').listeners.click();
+  assert.match(app.elements.get('learned-status').textContent, /still saved/);
+  await app.elements.get('legacy-notice-dismiss').listeners.click();
+  assert.equal(app.elements.get('legacy-notice').hidden, false);
+  await app.elements.get('legacy-notice-dismiss').listeners.click();
+  assert.equal(app.elements.get('legacy-notice').hidden, true);
+  assert.equal(app.elements.get('learned-legacy').hidden, false);
+  assert.equal(app.elements.get('legacy-deck').value, 'missing');
+  assert.deepEqual(writes.map(patch => Object.keys(patch)), [['legacyNoticeDismissed'], ['legacyNoticeDismissed']]);
+});
+
+test('a late preview cannot reopen review for a different dictionary', async () => {
+  let finish;
+  let response = { dictId: 'practice', words: [], pendingTotal: 2, pendingDecks: { first: 1, second: 1 } };
+  const app = renderer('src/windows/settings/settings.js', {
+    getLearnedList: async () => response,
+    previewLegacyLearned: () => new Promise(resolve => { finish = resolve; }),
+  });
+  app.run('currentSettings.activeDictionary = "practice"');
+  await app.run('loadLearnedList()');
+  const open = app.elements.get('btn-review-legacy').listeners.click();
+  const select = app.elements.get('legacy-deck');
+  select.value = 'second';
+  select.listeners.change();
+  finish({ orderToken: 'stale', sample: [{ row: 1, term: 'old', definition: 'deck' }] });
+  await open;
+  assert.ok(!app.elements.get('learned-legacy-dialog').open);
+  response = { dictId: 'practice', words: [], pendingTotal: 0, pendingDecks: {} };
+  await app.run('loadLearnedList()');
+  assert.equal(app.elements.get('legacy-notice').hidden, true);
+  assert.equal(app.elements.get('learned-legacy').hidden, true);
 });
 
 test('smart scheduling is opt-in and reverts to the last saved state after failure', async () => {

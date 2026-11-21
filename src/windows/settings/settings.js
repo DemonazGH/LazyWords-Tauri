@@ -444,23 +444,38 @@ let learnedListRequest = 0;
 let learnedDeckId = null;
 let legacyReview = null;
 let legacyConfirmation = null;
+let previewRequest = 0;
+const reviewDeck = document.getElementById('legacy-deck');
 
 async function loadLearnedList() {
   const request = ++learnedListRequest;
-  const { dictId, words, pendingTotal = 0, pendingHere = 0, orderToken } = await window.api.getLearnedList();
+  const { dictId, words, pendingTotal = 0, pendingHere = 0, pendingDecks = {} } = await window.api.getLearnedList();
   if (request !== learnedListRequest || dictId !== currentSettings.activeDictionary) return;
   allLearnedWords = [...words].reverse(); // newest first
   learnedDeckId = dictId;
-  legacyReview = { dictId, pendingTotal, pendingHere, orderToken };
+  legacyReview = { dictId, pendingTotal, pendingHere, pendingDecks };
   renderLearnedList();
 }
 
 function renderLegacyReview() {
-  const { pendingTotal = 0, pendingHere = 0 } = legacyReview ?? {};
+  const { pendingTotal = 0, pendingHere = 0, pendingDecks = {} } = legacyReview ?? {};
+  const decks = Object.entries(pendingDecks);
+  const selected = reviewDeck.value;
+  reviewDeck.replaceChildren(...decks.map(([id, count]) => {
+    const option = document.createElement('option');
+    option.value = id;
+    option.textContent = `${id} (${count})`;
+    return option;
+  }));
+  reviewDeck.value = [selected, currentSettings.activeDictionary].find(id => decks.some(([key]) => key === id)) ?? decks[0]?.[0] ?? '';
+  document.getElementById('legacy-notice').hidden = !decks.length || !!currentSettings.legacyNoticeDismissed;
+  document.getElementById('legacy-notice-message').textContent =
+    (L['learned.notice.message'] ?? 'Dictionaries with marks to review: {count}. You can leave them pending without losing them.')
+      .replace('{count}', decks.length);
   document.getElementById('learned-legacy').hidden = pendingTotal === 0;
-  document.getElementById('btn-review-legacy').hidden = pendingHere === 0;
+  document.getElementById('btn-review-legacy').hidden = !decks.length;
   document.getElementById('learned-legacy-count').textContent =
-    (L['learned.legacy.pending'] ?? 'Older markers pending: {total} ({deck} in this dictionary). They do not hide cards until linked.')
+    (L['learned.legacy.pending'] ?? 'Older markers pending: {total} ({deck} in the active dictionary). They do not hide cards until linked.')
       .replace('{total}', pendingTotal).replace('{deck}', pendingHere);
 }
 
@@ -469,19 +484,50 @@ function learnedStatus(key, fallback) {
 }
 
 const legacyDialog = document.getElementById('learned-legacy-dialog');
-document.getElementById('btn-review-legacy').addEventListener('click', () => {
-  if (!legacyReview?.orderToken || legacyReview.dictId !== currentSettings.activeDictionary) return;
-  legacyConfirmation = legacyReview;
-  legacyDialog.returnValue = '';
+document.getElementById('legacy-notice-review').addEventListener('click', () => reviewDeck.focus());
+document.getElementById('legacy-notice-dismiss').addEventListener('click', async () => {
+  try {
+    if (await saveImmediate({ legacyNoticeDismissed: true }) === false) throw new Error('Save failed');
+    renderLegacyReview();
+    reviewDeck.focus();
+  } catch (error) {
+    console.error(error);
+    currentSettings.legacyNoticeDismissed = false;
+    renderLegacyReview();
+    document.getElementById('legacy-notice-status').textContent = L['learned.notice.saveError'] ?? 'Could not save the dismissal.';
+  }
+});
+reviewDeck.addEventListener('change', () => {
+  previewRequest++;
+  document.getElementById('learned-status').textContent = '';
+});
+document.getElementById('btn-review-legacy').addEventListener('click', async () => {
+  const dictId = reviewDeck.value;
+  const request = ++previewRequest;
+  if (!dictId || legacyDialog.open) return;
+  let preview;
+  try { preview = await window.api.previewLegacyLearned(dictId); } catch (error) { console.error(error); }
+  if (request !== previewRequest || dictId !== reviewDeck.value) return;
+  if (!preview?.orderToken || !preview.sample.length) {
+    learnedStatus('learned.legacy.unavailable', 'No matching rows could be reviewed. Your marks are still saved.');
+    return;
+  }
+  document.getElementById('legacy-review-name').textContent = dictId;
+  document.getElementById('legacy-preview').replaceChildren(...preview.sample.map(({ row, term, definition }) => {
+    const li = document.createElement('li');
+    li.textContent = `#${row}: ${term} · ${definition}`;
+    return li;
+  }));
+  legacyConfirmation = { dictId, orderToken: preview.orderToken };
   legacyDialog.showModal();
 });
 
-legacyDialog.addEventListener('close', async () => {
+legacyDialog.addEventListener('cancel', () => { legacyConfirmation = null; });
+// A queued close event from an older preview must never consume a new confirmation.
+document.getElementById('legacy-review-form').addEventListener('submit', async event => {
   const review = legacyConfirmation;
   legacyConfirmation = null;
-  const confirmed = legacyDialog.returnValue === 'confirm';
-  legacyDialog.returnValue = '';
-  if (!confirmed || !review) return;
+  if (!legacyDialog.open || event.submitter?.id !== 'legacy-review-confirm' || !review) return;
   try {
     const linked = await window.api.resolveLegacyLearned(review.dictId, review.orderToken);
     if (linked > 0) {

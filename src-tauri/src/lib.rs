@@ -186,7 +186,7 @@ pub fn run() {
                     return Ok(());
                 }
             };
-            let state = match state::init_state(app.handle(), &data_dir, settings.clone()) {
+            let (state, show_migration_notice) = match state::init_state(app.handle(), &data_dir, settings.clone()) {
                 Ok(state) => state,
                 Err(error) => {
                     use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
@@ -291,8 +291,8 @@ pub fn run() {
             .title("LazyWords Settings")
             .inner_size(800.0, 600.0)
             .shadow(false)
-            .skip_taskbar(true)
-            .visible(false)
+                .skip_taskbar(!show_migration_notice || first_launch)
+                .visible(show_migration_notice && !first_launch)
             .build()
             .unwrap();
 
@@ -464,6 +464,7 @@ pub fn run() {
             commands::remove_learned,
             commands::clear_learned,
             commands::resolve_legacy_learned,
+            commands::preview_legacy_learned,
             commands::get_dictionaries,
             commands::import_dictionary,
             commands::delete_dictionary,

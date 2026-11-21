@@ -11,6 +11,7 @@ window.api = {
   deleteDictionary: (id) => invoke('delete_dictionary', { id }),
   getStats: () => invoke('get_stats'),
   getLearnedList: () => invoke('get_learned_list'),
+  previewLegacyLearned: dictId => invoke('preview_legacy_learned', { dictId }),
   markLearned: (cardId, dictId) => invoke('mark_learned', { cardId, dictId }),
   takeQuickAddDraft: () => invoke('take_quick_add_draft'),
   saveQuickCard: (term, definition) => invoke('save_quick_card', { term, definition }),

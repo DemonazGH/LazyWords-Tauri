@@ -34,6 +34,10 @@ pub struct ProfileData {
 }
 
 impl ProfileData {
+    pub fn newly_pending(&self) -> bool {
+        self.needs_migration && self.learned.pending_count() > 0
+    }
+
     pub fn load(dir: &Path) -> Result<Self, LoadError> {
         // Load both before constructing AppState or enabling any profile writers.
         let stable_path = dir.join(FILE_NAME);
@@ -202,6 +206,7 @@ mod tests {
         .unwrap();
         let shipped = shipped_decks();
         let first = ProfileData::open(&data, Some(&shipped)).unwrap();
+        assert!(first.newly_pending());
         for (deck, indices) in [
             ("en-definitions", &[2usize, 2808][..]),
             ("en-irregular-verbs", &[221][..]),
@@ -218,6 +223,7 @@ mod tests {
         let stable = fs::read(data.join(FILE_NAME)).unwrap();
         fs::remove_file(imports.join("EN-RU.JsOn")).unwrap();
         let second = ProfileData::open(&data, Some(&shipped)).unwrap();
+        assert!(!second.newly_pending());
         assert_eq!(second.stats.days["2025-12-01"].learned, 7);
         assert_eq!(first.learned, second.learned);
         assert_eq!(fs::read(data.join(FILE_NAME)).unwrap(), stable);

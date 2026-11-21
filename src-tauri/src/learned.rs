@@ -8,6 +8,14 @@ pub type LegacyMarkers = HashMap<String, Vec<usize>>;
 pub const FILE_NAME: &str = "learned-v2.json";
 const VERSION: u32 = 2;
 
+pub fn unique_card_ids(ids: &[String]) -> HashSet<&str> {
+    let mut occurrences = HashMap::new();
+    for id in ids {
+        *occurrences.entry(id.as_str()).or_insert(0usize) += 1;
+    }
+    occurrences.into_iter().filter_map(|(id, n)| (n == 1).then_some(id)).collect()
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Learned {
@@ -50,6 +58,11 @@ impl Learned {
         self.pending.values().map(Vec::len).sum()
     }
 
+    pub fn pending_decks(&self) -> std::collections::BTreeMap<&str, usize> {
+        self.pending.iter().filter(|(_, rows)| !rows.is_empty())
+            .map(|(id, rows)| (id.as_str(), rows.len())).collect()
+    }
+
     pub fn mark(&mut self, deck: &str, id: &str) -> bool {
         let ids = self.decks.entry(deck.to_owned()).or_default();
         if ids.iter().any(|existing| existing == id) {
@@ -81,10 +94,7 @@ impl Learned {
         if Self::order_token(card_ids) != reviewed_order {
             return 0;
         }
-        let mut occurrences = HashMap::new();
-        for id in card_ids {
-            *occurrences.entry(id.as_str()).or_insert(0usize) += 1;
-        }
+        let unique = unique_card_ids(card_ids);
         let Some(rows) = self.pending.get_mut(deck) else {
             return 0;
         };
@@ -94,7 +104,7 @@ impl Learned {
             let Some(id) = card_ids.get(row) else {
                 return true;
             };
-            if occurrences[id.as_str()] != 1 {
+            if !unique.contains(id.as_str()) {
                 return true;
             }
             if !stable.contains(id) {
