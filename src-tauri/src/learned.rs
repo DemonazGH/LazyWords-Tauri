@@ -72,6 +72,18 @@ impl Learned {
         true
     }
 
+    /// Moves a marker to a card's new ID after its text was edited.
+    pub fn replace(&mut self, deck: &str, old: &str, new: &str) {
+        let Some(ids) = self.decks.get_mut(deck) else {
+            return;
+        };
+        if ids.iter().any(|id| id == new) {
+            ids.retain(|id| id != old);
+        } else if let Some(id) = ids.iter_mut().find(|id| *id == old) {
+            *id = new.to_owned();
+        }
+    }
+
     pub fn restore(&mut self, deck: &str, visible_ids: &HashSet<&str>) -> usize {
         let Some(ids) = self.decks.get_mut(deck) else {
             return 0;

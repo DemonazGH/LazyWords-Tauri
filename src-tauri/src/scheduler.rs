@@ -117,6 +117,50 @@ impl SchedulingHistory {
         })
     }
 
+    /// Keeps a card's exposure history when its content, and so its ID, is edited.
+    /// Only memory changes here; `flush` writes it.
+    pub fn rename_card(&mut self, deck_id: &str, old: &str, new: &str) {
+        let Some(deck) = self.progress.decks.get_mut(deck_id) else {
+            return;
+        };
+        if let Some(exposure) = deck.cards.remove(old) {
+            deck.cards.insert(new.to_owned(), exposure);
+        }
+        if deck.last_card.as_deref() == Some(old) {
+            deck.last_card = Some(new.to_owned());
+        }
+    }
+
+    /// True if the deck's history names this card, as an exposure or as the last card shown.
+    pub fn mentions(&self, deck_id: &str, id: &str) -> bool {
+        self.progress.decks.get(deck_id).is_some_and(|deck| {
+            deck.cards.contains_key(id) || deck.last_card.as_deref() == Some(id)
+        })
+    }
+
+    /// Writes the history now. Returns false if it could not be saved.
+    pub fn flush(&self) -> bool {
+        match self.persist() {
+            Ok(()) => true,
+            Err(error) => {
+                eprintln!("Could not save scheduling history: {error}");
+                false
+            }
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn record_for_test(&mut self, deck_id: &str, id: &str, shown: u32) {
+        let deck = self.progress.decks.entry(deck_id.to_owned()).or_default();
+        deck.cards.insert(id.to_owned(), Exposure { shown, last_shown: 1 });
+        self.persist().unwrap();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shown_for_test(&self, deck_id: &str, id: &str) -> Option<u32> {
+        Some(self.progress.decks.get(deck_id)?.cards.get(id)?.shown)
+    }
+
     fn persist(&self) -> io::Result<()> {
         if !self.writable {
             return Ok(());
@@ -314,6 +358,32 @@ mod tests {
             restored.progress.decks["deck"].cards[original.card_id(0)].shown,
             2
         );
+    }
+
+    #[test]
+    fn renaming_a_card_keeps_its_history_and_survives_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("progress.json");
+        let mut history = SchedulingHistory::load(path.clone());
+        let engine = engine(&[("only", "card")]);
+        let mut rng = StdRng::seed_from_u64(1);
+        history.next("deck", &engine, 10, &mut rng).unwrap();
+        history.next("deck", &engine, 20, &mut rng).unwrap();
+        let old = engine.card_id(0).clone();
+
+        history.rename_card("deck", "absent", "ignored");
+        assert!(!history.mentions("deck", "ignored"));
+        history.rename_card("deck", &old, "new");
+        assert!(history.mentions("deck", "new") && !history.mentions("deck", &old));
+        assert!(!path.exists(), "moving is in memory until flushed");
+        assert!(history.flush());
+
+        let deck = &SchedulingHistory::load(path).progress.decks["deck"];
+        assert!(!deck.cards.contains_key(&old));
+        assert!(!deck.cards.contains_key("ignored"));
+        assert_eq!(deck.cards["new"].shown, 2);
+        assert_eq!(deck.cards["new"].last_shown, 20);
+        assert_eq!(deck.last_card.as_deref(), Some("new"));
     }
 
     #[test]
