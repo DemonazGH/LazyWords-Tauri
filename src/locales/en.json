@@ -37,7 +37,7 @@
   "myWords.loadError": "Could not read My Words.",
   "myWords.writeError": "Could not update My Words. No changes were saved.",
   "shortcuts.conflict": "Some hotkeys are unavailable: {shortcuts}. LazyWords is still running. Open Settings from the tray to change them or apply them again.",
-  "hotkeys.warning": "Global shortcuts can override shortcuts in the app you are using, even if Windows reports no conflict. Settings and Quick Add are also available in the tray menu.",
+  "hotkeys.warning": "Choose shortcuts you don't use for typing or in other apps. Ctrl+C can take over Copy even if Windows reports no conflict. On some keyboard layouts, Ctrl+Alt can block characters typed with AltGr. Settings and Quick Add are always available from the tray.",
   "hotkeys.format": "Type Ctrl or Alt, optionally Shift, plus a letter A–Z, digit 0–9 or F1–F24 (except F12), e.g. Ctrl+Shift+N. Uncheck Enabled and apply to turn off a shortcut.",
   "hotkeys.keys": "Keys",
   "hotkeys.enabled": "Enabled",
