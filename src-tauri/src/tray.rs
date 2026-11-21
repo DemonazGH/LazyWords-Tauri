@@ -243,7 +243,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                             let mut engine = state.word_engine.lock().unwrap();
                             engine.load_dictionary(words);
                             engine.set_learned_ids(learned.ids(&new_id));
-                            settings.active_dictionary = new_id.clone();
+                            settings.select_dictionary(new_id.clone());
                             let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
                             crate::settings::save_settings(&path, &settings);
                         }

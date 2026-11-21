@@ -70,7 +70,7 @@ JSON files support both `{"term": ..., "definition": ...}` and legacy `{"word": 
 - Checks fullscreen app detection on Windows (skips card if foreground app is fullscreen)
 - Records `shown` stat + emits `stats-updated` on every card shown
 - Interval wait prioritizes completion over manual Next and the one-second tick. Both waits register before checking pending completion and ignore stale notifications, including late wakeups after Restore.
-- When selection returns no unlearned card: sets `all_learned = true`, emits `show-all-learned`, then scans all dictionaries for one with remaining cards — if found emits `show-switched-dict` + `dict-auto-switched` and resets; if not found emits `show-all-dicts-learned`
+- When selection returns no unlearned card: sets `all_learned = true`, emits `show-all-learned`, then scans for a deck with remaining cards. An explicit My Words practice session tries its origin first. A successful switch emits `show-switched-dict` + `dict-auto-switched`; if no cards remain it emits `show-all-dicts-learned`.
 
 **System tray** (`tray.rs`):
 - Tray icon with normal/dimmed (paused) states; tooltip "LazyWords"
@@ -125,6 +125,8 @@ flush pending sliders; failed saves do not show success. Dictionary selection
 discards stale async responses. Card state is invalidated on dictionary switches.
 
 **`src/windows/quick-add/`** - Local form for saving a term and definition. For copied or typed terms, Quick Add offers an exact match from the bundled Russian translations for a Russian interface, or English definitions otherwise. The active deck is irrelevant; verb forms are not definitions. Selecting a suggestion fills the answer without saving. Cancel never saves. Save card (including implicit submit) keeps the current dictionary. Only "Save and practice My Words" selects My Words, after the CSV and the new settings have been written. If just the settings write fails, the card stays saved and the previous practice deck remains active.
+
+The switch saves the previous deck's ID in the optional `myWordsReturnTo` setting. Further saves while already practicing My Words keep that origin, including across restarts. Completion consumes it; changing decks manually cancels it. Choosing My Words from Settings or the tray does not start a return session.
 
 **`src/modules/`** — JS stubs from the Electron era; not part of active code paths.
 

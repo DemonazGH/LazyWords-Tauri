@@ -137,21 +137,17 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
             return false;
         }
 
-        let next = crate::commands::get_all_dict_ids(app).into_iter()
-            .filter(|id| id != &current_dict_id)
-            .find_map(|id| {
-                let words = crate::commands::load_dictionary_by_id(app, &id)?;
-                let ids: std::collections::HashSet<_> =
-                    learned.ids(&id).iter().map(String::as_str).collect();
-                words.iter().any(|word| !ids.contains(crate::scheduler::card_id(word).as_str()))
-                    .then_some((id, words))
-            });
+        use crate::quick_add::practice;
+        let next = practice::choose_deck(&settings, crate::commands::get_all_dict_ids(app),
+            &learned, |id| crate::commands::load_dictionary_by_id(app, id), practice::Search::Completion);
+        let path = app.path().app_data_dir().unwrap().join("data/settings.json");
+        if let Err(error) = practice::finish(&path, &mut settings, next.as_ref().map(|(id, _)| id.as_str())) {
+            eprintln!("Could not save dictionary completion: {error}");
+            return false;
+        }
         if let Some((id, words)) = next {
             engine.load_dictionary(words);
             engine.set_learned_ids(learned.ids(&id));
-            settings.active_dictionary = id.clone();
-            let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
-            crate::settings::save_settings(&path, &settings);
             Some(id)
         } else {
             *state.all_dicts_done.lock().unwrap() = true;
@@ -160,6 +156,8 @@ async fn handle_all_learned(app: &AppHandle) -> bool {
     };
 
     if let Some(dict_id) = next_id {
+        let tray_app = app.clone();
+        let _ = app.run_on_main_thread(move || crate::tray::refresh_tray(&tray_app));
         let dict_name = crate::commands::dictionary_display_name(app, &dict_id);
         let _ = app.emit("dict-auto-switched", serde_json::json!({ "newId": dict_id }));
         let _ = app.emit("show-switched-dict", serde_json::json!({

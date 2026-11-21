@@ -214,12 +214,15 @@ pub fn run() {
             let active_dict = {
                 let saved = state.settings.lock().unwrap().active_dictionary.clone();
                 if !saved.is_empty() && commands::load_dictionary_by_id(&app.handle(), &saved).is_none() {
-                    // Saved dict missing — migrate to first available
-                    let fallback = commands::get_all_dict_ids(&app.handle())
-                        .into_iter().next().unwrap_or_default();
-                    if !fallback.is_empty() {
-                        let mut settings = state.settings.lock().unwrap();
-                        settings.active_dictionary = fallback.clone();
+                    let mut settings = state.settings.lock().unwrap();
+                    let fallback = if saved == quick_add::DECK_ID {
+                        quick_add::practice::replacement_for_empty(app.handle(), &settings, &state.learned.lock().unwrap())
+                            .map(|(id, _)| id).unwrap_or_default()
+                    } else {
+                        commands::get_all_dict_ids(app.handle()).into_iter().next().unwrap_or_default()
+                    };
+                    if !fallback.is_empty() || saved == quick_add::DECK_ID {
+                        settings.select_dictionary(fallback.clone());
                         let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
                         crate::settings::save_settings(&path, &settings);
                     }

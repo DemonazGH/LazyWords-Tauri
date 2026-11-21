@@ -21,6 +21,8 @@ pub struct Settings {
     pub legacy_notice_dismissed: bool,
     pub fade_duration: f32,
     pub active_dictionary: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub my_words_return_to: Option<String>,
     pub auto_start: bool,
     #[serde(default)]
     pub msix_startup_initialized: bool,
@@ -41,6 +43,7 @@ impl Default for Settings {
             legacy_notice_dismissed: false,
             fade_duration: 0.5,
             active_dictionary: String::new(),
+            my_words_return_to: None,
             auto_start: true,
             msix_startup_initialized: false,
             first_launch: true,
@@ -54,6 +57,11 @@ fn deserialize_answer_delay<'de, D: serde::Deserializer<'de>>(deserializer: D) -
 }
 
 impl Settings {
+    pub fn select_dictionary(&mut self, id: String) {
+        self.active_dictionary = id;
+        self.my_words_return_to = None;
+    }
+
     pub fn needs_onboarding(&self) -> bool {
         // Recover profiles stranded by older builds clearing firstLaunch too early.
         self.first_launch || self.active_dictionary.is_empty()

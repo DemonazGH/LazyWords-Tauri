@@ -49,8 +49,8 @@ pub fn get_settings(app: AppHandle, state: State<'_, AppState>) -> Settings {
 
 #[tauri::command]
 pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: Value) -> bool {
-    // Shortcut changes must also update live OS registrations via set_hotkey.
-    if new_settings.get("hotkeys").is_some() { return false; }
+    // These fields belong to the hotkey and practice-switch transactions.
+    if new_settings.get("hotkeys").is_some() || new_settings.get("myWordsReturnTo").is_some() { return false; }
     let startup_requested = new_settings.get("autoStart").and_then(Value::as_bool);
     let mut current = state.settings.lock().unwrap();
     let old_dict = current.active_dictionary.clone();
@@ -84,6 +84,7 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: V
         None
     };
     if selected_words.as_ref().is_some_and(|words| !words.is_empty()) {
+        current.my_words_return_to = None;
         // Choosing through Settings after dismissing onboarding also completes setup.
         current.first_launch = false;
     }
@@ -561,7 +562,13 @@ pub fn delete_dictionary(app: AppHandle, state: State<'_, AppState>, id: String)
         if switched {
             // Fall back to first still-available dictionary, or empty string
             let fallback = get_all_dict_ids(&app).into_iter().next().unwrap_or_default();
-            settings.active_dictionary = fallback;
+            settings.select_dictionary(fallback);
+        }
+        let deleted_return_target = settings.my_words_return_to.as_deref() == Some(id.as_str());
+        if deleted_return_target {
+            settings.my_words_return_to = None;
+        }
+        if switched || deleted_return_target {
             let path = app.path().app_data_dir().unwrap().join("data").join("settings.json");
             crate::settings::save_settings(&path, &settings);
         }
