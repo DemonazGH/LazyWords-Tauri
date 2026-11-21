@@ -383,6 +383,7 @@ async function mutateMyWords(action, dialog, submitId, mutate) {
       'quickAdd.duplicate': 'This card is already in My Words.',
       'myWords.stale': 'This card changed. Close this dialog and reopen My Words.',
       'myWords.ambiguous': 'There are multiple identical cards. No changes were made.',
+      'myWords.retainedProgress': 'A card with this text was removed earlier and its progress is still saved. No changes were made. Add this text as a new card with Quick Add instead.',
     };
     status.textContent = Object.hasOwn(messages, error)
       ? (L[error] ?? messages[error])
