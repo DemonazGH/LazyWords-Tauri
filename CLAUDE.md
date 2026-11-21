@@ -123,7 +123,7 @@ Settings merge pending slider patches and serialize persistence. Discrete change
 flush pending sliders; failed saves do not show success. Dictionary selection
 discards stale async responses. Card state is invalidated on dictionary switches.
 
-**`src/windows/quick-add/`** - Local form for saving a term and definition. Optional exact-match suggestions come from the active bundled dictionary. Opening or cancelling never saves a card, and saving never changes the active dictionary.
+**`src/windows/quick-add/`** - Local form for saving a term and definition. Optional exact-match suggestions come from the active bundled dictionary. Cancel never saves. Save card (including implicit submit) keeps the current dictionary. Only "Save and practice My Words" selects My Words, after the CSV and the new settings have been written. If just the settings write fails, the card stays saved and the previous practice deck remains active.
 
 **`src/modules/`** — JS stubs from the Electron era; not part of active code paths.
 

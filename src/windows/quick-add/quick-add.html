@@ -9,7 +9,7 @@
 <body>
   <main>
     <h1 data-i18n="quickAdd.title">Quick Add</h1>
-    <p class="intro" data-i18n="quickAdd.intro">Save a card to My Words. Select it in Settings to practice.</p>
+    <p class="intro" data-i18n="quickAdd.intro">Cards are saved to My Words. Choose “Save card” to keep practicing your current dictionary.</p>
     <form id="quick-add-form">
       <label for="quick-add-term" data-i18n="quickAdd.term">Term</label>
       <input id="quick-add-term" maxlength="160" required autocomplete="off">
@@ -23,6 +23,7 @@
       <div class="actions">
         <button type="button" id="quick-add-cancel" data-i18n="quickAdd.cancel">Cancel</button>
         <button type="submit" id="quick-add-save" data-i18n="quickAdd.save">Save card</button>
+        <button type="submit" id="quick-add-practice" data-i18n="quickAdd.practice">Save and practice My Words</button>
       </div>
     </form>
   </main>

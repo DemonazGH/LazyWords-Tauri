@@ -14,7 +14,7 @@ window.api = {
   previewLegacyLearned: dictId => invoke('preview_legacy_learned', { dictId }),
   markLearned: (cardId, dictId) => invoke('mark_learned', { cardId, dictId }),
   takeQuickAddDraft: () => invoke('take_quick_add_draft'),
-  saveQuickCard: (term, definition) => invoke('save_quick_card', { term, definition }),
+  saveQuickCard: (term, definition, practice = false) => invoke('save_quick_card', { term, definition, practice }),
   getMyWords: () => invoke('get_my_words'),
   editMyWord: (cardId, term, definition) => invoke('edit_my_word', { cardId, term, definition }),
   deleteMyWord: (cardId) => invoke('delete_my_word', { cardId }),
