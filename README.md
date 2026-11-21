@@ -80,7 +80,7 @@ You can also **import your own** CSV, JSON, or XLSX file. Use `term` and `defini
 
 ## Settings
 
-Open with `Ctrl+Shift+W` or via the system tray icon.
+Open Settings from the system tray, or use the Settings shortcut (default: `Ctrl+Shift+W`).
 
 - Switch active dictionary
 - Adjust card interval, font size, and position

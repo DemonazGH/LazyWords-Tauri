@@ -28,7 +28,53 @@ pub struct Binding {
     keys: String,
 }
 
-pub type Hotkeys = BTreeMap<Action, Binding>;
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct Hotkeys {
+    #[serde(flatten)]
+    known: BTreeMap<Action, Binding>,
+    // Round-trip newer actions on downgrade, but never register or dispatch them.
+    #[serde(flatten)]
+    future: BTreeMap<String, serde_json::Value>,
+}
+
+impl<'de> Deserialize<'de> for Hotkeys {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Key {
+            Known(Action),
+            Future(String),
+        }
+
+        struct HotkeyMap;
+        impl<'de> serde::de::Visitor<'de> for HotkeyMap {
+            type Value = Hotkeys;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("a map of shortcut action names to bindings")
+            }
+
+            fn visit_map<M: serde::de::MapAccess<'de>>(
+                self,
+                mut map: M,
+            ) -> Result<Hotkeys, M::Error> {
+                let mut prefs = Hotkeys::default();
+                while let Some(key) = map.next_key::<Key>()? {
+                    match key {
+                        Key::Known(action) => {
+                            prefs.known.insert(action, map.next_value()?);
+                        }
+                        Key::Future(name) => {
+                            prefs.future.insert(name, map.next_value()?);
+                        }
+                    }
+                }
+                Ok(prefs)
+            }
+        }
+        deserializer.deserialize_map(HotkeyMap)
+    }
+}
 
 impl Action {
     fn default_binding(self) -> Binding {
@@ -47,14 +93,18 @@ impl Action {
 }
 
 pub fn defaults() -> Hotkeys {
-    ACTIONS
-        .into_iter()
-        .map(|a| (a, a.default_binding()))
-        .collect()
+    Hotkeys {
+        known: ACTIONS
+            .into_iter()
+            .map(|a| (a, a.default_binding()))
+            .collect(),
+        future: BTreeMap::new(),
+    }
 }
 
 fn binding(prefs: &Hotkeys, action: Action) -> Binding {
     prefs
+        .known
         .get(&action)
         .cloned()
         .unwrap_or_else(|| action.default_binding())
@@ -346,7 +396,7 @@ pub fn set_hotkey(
         } else {
             (binding(&prefs, action), old_key)
         };
-        patched.hotkeys.insert(action, value);
+        patched.hotkeys.known.insert(action, value);
         if let Err(error) = crate::settings::try_save_settings(&path, &patched) {
             eprintln!("Could not save hotkey: {error}");
             return false;
@@ -422,10 +472,14 @@ mod tests {
                 (Action::Settings, key("Ctrl+Shift+W")),
             ])
         );
-        assert_eq!(prefs.hotkeys[&Action::QuickAdd], input("", false));
-        prefs.hotkeys.insert(Action::Next, input("Alt+F8", false));
+        assert_eq!(prefs.hotkeys.known[&Action::QuickAdd], input("", false));
         prefs
             .hotkeys
+            .known
+            .insert(Action::Next, input("Alt+F8", false));
+        prefs
+            .hotkeys
+            .known
             .insert(Action::QuickAdd, input("Ctrl+Alt+Q", true));
         crate::settings::try_save_settings(&path, &prefs).unwrap();
         let restored = crate::settings::load_settings(&path).unwrap();
@@ -443,17 +497,74 @@ mod tests {
     }
 
     #[test]
+    fn future_hotkeys_are_not_registered_and_survive_settings_saves() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let mut file = serde_json::to_value(crate::settings::Settings::default()).unwrap();
+        file["firstLaunch"] = false.into();
+        file["activeDictionary"] = "custom-deck".into();
+        file["hotkeys"] = serde_json::json!({
+            "next": {"enabled": true, "keys": "Alt+F7"},
+            "settings": {"enabled": false, "keys": "Ctrl+Shift+W"},
+            "futureAction": {"enabled": true, "keys": "Alt+F8", "options": [1, 2]},
+            "anotherFutureAction": ["a different binding format"]
+        });
+        std::fs::write(&path, serde_json::to_vec(&file).unwrap()).unwrap();
+        let mut prefs = crate::settings::load_settings(&path).unwrap();
+        assert!(!prefs.needs_onboarding());
+        let os = FakeOs::default();
+        let (live, failures) = reserve_startup(&prefs.hotkeys, &os, true);
+        assert!(failures.is_empty());
+        assert_eq!(live.len(), 3);
+        assert_eq!(live[&Action::Next], key("Alt+F7"));
+        assert!(!live.contains_key(&Action::Settings));
+        assert!(!os.held.borrow().contains(&key("Alt+F8")));
+
+        prefs.font_size = 30.0;
+        prefs
+            .hotkeys
+            .known
+            .insert(Action::Next, input("Alt+F9", true));
+        crate::settings::try_save_settings(&path, &prefs).unwrap();
+        let saved: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        file["hotkeys"]["next"]["keys"] = "Alt+F9".into();
+        assert_eq!(saved["hotkeys"], file["hotkeys"]);
+        let restored = crate::settings::load_settings(&path).unwrap();
+        assert_eq!(restored.hotkeys, prefs.hotkeys);
+        assert_eq!(restored.active_dictionary, "custom-deck");
+    }
+
+    #[test]
+    fn invalid_known_hotkey_is_still_a_settings_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let mut file = serde_json::to_value(crate::settings::Settings::default()).unwrap();
+        file["hotkeys"] = serde_json::json!({
+            "futureAction": null, "quickAdd": {"enabled": "yes", "keys": "Alt+F8"}
+        });
+        let original = serde_json::to_vec(&file).unwrap();
+        std::fs::write(&path, &original).unwrap();
+        let error = crate::settings::load_settings(&path).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+    }
+
+    #[test]
     fn each_action_can_be_the_only_active_action_or_all_can_be_off() {
-        let mut prefs: Hotkeys = ACTIONS.into_iter().map(|a| (a, input("", false))).collect();
+        let mut prefs = defaults();
+        prefs.known.values_mut().for_each(|b| b.enabled = false);
         assert!(reserve_startup(&prefs, &FakeOs::default(), true)
             .0
             .is_empty());
         for a in ACTIONS {
-            prefs.insert(a, requested(&prefs, a, input("alt+F9", true)).unwrap().0);
+            prefs
+                .known
+                .insert(a, requested(&prefs, a, input("alt+F9", true)).unwrap().0);
             let (live, failures) = reserve_startup(&prefs, &FakeOs::default(), true);
             assert!(failures.is_empty());
             assert_eq!(live, BTreeMap::from([(a, key("Alt+F9"))]));
-            prefs.insert(a, input("Alt+F9", false));
+            prefs.known.insert(a, input("Alt+F9", false));
         }
     }
 
@@ -463,6 +574,10 @@ mod tests {
             (" shift + alt + control + z ", "Ctrl+Alt+Shift+Z"),
             ("alt+0", "Alt+0"),
             ("ctrl+f24", "Ctrl+F24"),
+            ("ctrl+alt+a", "Ctrl+Alt+A"),
+            ("ctrl+c", "Ctrl+C"),
+            ("ctrl+v", "Ctrl+V"),
+            ("alt+f", "Alt+F"),
         ] {
             assert_eq!(
                 normalize(input(raw, true)),
@@ -502,7 +617,9 @@ mod tests {
             Err(DUPLICATE)
         );
         assert!(requested(&prefs, Action::Next, candidate.clone()).is_ok());
-        prefs.insert(Action::Next, input("Ctrl+Shift+N", false));
+        prefs
+            .known
+            .insert(Action::Next, input("Ctrl+Shift+N", false));
         assert!(requested(&prefs, Action::Pause, candidate).is_ok());
     }
 
@@ -513,7 +630,7 @@ mod tests {
             requested(&prefs, Action::Pause, input("Ctrl+", false)),
             Ok((input("Ctrl+Shift+P", false), None))
         );
-        prefs.insert(Action::Pause, input("typo", true));
+        prefs.known.insert(Action::Pause, input("typo", true));
         assert_eq!(
             requested(&prefs, Action::Pause, input("typo", false)),
             Ok((input("", false), None))
@@ -524,8 +641,8 @@ mod tests {
     fn startup_conflict_leaves_preferences_intact_and_can_be_retried_without_restart() {
         let os = FakeOs::default();
         let mut prefs = defaults();
-        prefs.insert(Action::QuickAdd, input("Alt+Q", true));
-        prefs.remove(&Action::Settings);
+        prefs.known.insert(Action::QuickAdd, input("Alt+Q", true));
+        prefs.known.remove(&Action::Settings);
         let blocked = key("Ctrl+Shift+P");
         os.acquire(blocked);
         let (live, failures) = reserve_startup(&prefs, &os, false);
@@ -533,7 +650,7 @@ mod tests {
         assert!(!live.contains_key(&Action::QuickAdd));
         assert_eq!(live[&Action::Settings], key("Ctrl+Shift+W"));
         assert!(!live.contains_key(&Action::Pause));
-        assert_eq!(prefs[&Action::Pause], input("Ctrl+Shift+P", true));
+        assert_eq!(prefs.known[&Action::Pause], input("Ctrl+Shift+P", true));
         assert_eq!(
             transition(&os, None, Some(blocked), |_| panic!("must not persist")),
             Err(UNAVAILABLE)
