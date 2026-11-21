@@ -56,9 +56,17 @@ Over days and weeks, unfamiliar words become familiar. Passively.
 | `Ctrl+Shift+P` | Pause / resume |
 | `Ctrl+Shift+W` | Open settings |
 
+In 1.1.0, each action can be rebound or disabled in **Settings → Hotkeys**.
+Quick Add is available from the tray; its global shortcut is off by default.
+
 ---
 
 ## Dictionaries
+
+In 1.1.0, use **Quick Add** to build your own **My Words** deck. Its window
+can read a copied term locally. **Save card** leaves your practice deck alone;
+**Save and practice My Words** returns to the previous deck after you finish
+if it still has cards to learn. You can edit or delete your cards in Settings.
 
 LazyWords ships with three starter packs from the [NGSL 1.2](http://www.newgeneralservicelist.org/) wordlist (~2800 most useful English words):
 
