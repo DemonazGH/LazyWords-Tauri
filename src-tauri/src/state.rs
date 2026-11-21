@@ -31,7 +31,10 @@ pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> Result
     let bundled = app.path().resolve("dictionaries", tauri::path::BaseDirectory::Resource).ok();
     let profile = crate::profile_data::ProfileData::open(app_dir, bundled.as_deref())?;
     let show_notice = profile.newly_pending() && !settings.legacy_notice_dismissed;
-    let crate::profile_data::ProfileData { learned, stats, .. } = profile;
+    let crate::profile_data::ProfileData { mut learned, stats, .. } = profile;
+    let mut history = crate::scheduler::SchedulingHistory::load(app_dir.join("progress.json"));
+    // Finish or undo a My Words edit that was interrupted before all three files agreed.
+    crate::quick_add::recover_edit(app_dir, &mut learned, &mut history);
 
     let engine = WordEngine::new();
     
@@ -42,9 +45,7 @@ pub fn init_state(app: &AppHandle, app_dir: &Path, settings: Settings) -> Result
         stats_tracker: Mutex::new(StatsTracker::new(stats)),
         learned: Mutex::new(learned),
         word_engine: Mutex::new(engine),
-        scheduling_history: Mutex::new(crate::scheduler::SchedulingHistory::load(
-            app_dir.join("progress.json"),
-        )),
+        scheduling_history: Mutex::new(history),
         quick_add_draft: Mutex::new(None),
         i18n: Mutex::new(i18n),
         is_paused: Mutex::new(false),

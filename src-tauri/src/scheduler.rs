@@ -117,24 +117,46 @@ impl SchedulingHistory {
         })
     }
 
+    pub fn has_card(&self, deck_id: &str, id: &str) -> bool {
+        self.progress.decks.get(deck_id).is_some_and(|deck| deck.cards.contains_key(id))
+    }
+
     /// Keeps a card's exposure history when its content, and so its ID, is edited.
-    pub fn rename_card(&mut self, deck_id: &str, old: &str, new: &str) {
+    /// Returns false only if the moved history could not be saved.
+    pub fn rename_card(&mut self, deck_id: &str, old: &str, new: &str) -> bool {
         let Some(deck) = self.progress.decks.get_mut(deck_id) else {
-            return;
+            return true;
         };
         let moved = deck.cards.remove(old);
         let was_last = deck.last_card.as_deref() == Some(old);
+        if moved.is_none() && !was_last {
+            return true;
+        }
         if let Some(exposure) = moved {
             deck.cards.insert(new.to_owned(), exposure);
-        } else if !was_last {
-            return;
         }
         if was_last {
             deck.last_card = Some(new.to_owned());
         }
-        if let Err(error) = self.persist() {
-            eprintln!("Could not save scheduling history: {error}");
+        match self.persist() {
+            Ok(()) => true,
+            Err(error) => {
+                eprintln!("Could not save scheduling history: {error}");
+                false
+            }
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn record_for_test(&mut self, deck_id: &str, id: &str, shown: u32) {
+        let deck = self.progress.decks.entry(deck_id.to_owned()).or_default();
+        deck.cards.insert(id.to_owned(), Exposure { shown, last_shown: 1 });
+        self.persist().unwrap();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shown_for_test(&self, deck_id: &str, id: &str) -> Option<u32> {
+        Some(self.progress.decks.get(deck_id)?.cards.get(id)?.shown)
     }
 
     fn persist(&self) -> io::Result<()> {
@@ -347,9 +369,9 @@ mod tests {
         history.next("deck", &engine, 20, &mut rng).unwrap();
         let old = engine.card_id(0).clone();
 
-        history.rename_card("deck", "absent", "ignored");
+        assert!(history.rename_card("deck", "absent", "ignored"));
         assert!(!path.exists(), "nothing to move, so nothing is written");
-        history.rename_card("deck", &old, "new");
+        assert!(history.rename_card("deck", &old, "new"));
 
         let deck = &SchedulingHistory::load(path).progress.decks["deck"];
         assert!(!deck.cards.contains_key(&old));
