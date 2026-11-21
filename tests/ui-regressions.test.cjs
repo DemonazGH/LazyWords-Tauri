@@ -7,6 +7,7 @@ const { test } = require('node:test');
 function renderer(file, api = {}) {
   const elements = new Map();
   const timers = new Map();
+  const windowEvents = {}, documentEvents = {};
   const errors = [];
   let timerId = 0;
   function element() {
@@ -32,8 +33,9 @@ function renderer(file, api = {}) {
   }
   const context = vm.createContext({
     console: { ...console, error: (...args) => errors.push(args) },
-    window: { api, addEventListener() {} },
+    window: { api, addEventListener: (name, cb) => { windowEvents[name] = cb; } },
     document: {
+      addEventListener: (name, cb) => { documentEvents[name] = cb; },
       getElementById(id) {
         if (!elements.has(id)) elements.set(id, element());
         return elements.get(id);
@@ -46,7 +48,7 @@ function renderer(file, api = {}) {
   const source = readFileSync(path.join(__dirname, '..', file), 'utf8');
   vm.runInContext(source.replace(/init\(\);\s*$/, ''), context, { filename: file });
   return {
-    run: code => vm.runInContext(code, context), elements, errors,
+    run: code => vm.runInContext(code, context), elements, errors, windowEvents, documentEvents,
     async tick(delay) {
       for (const [id, timer] of [...timers]) {
         if (timer.delay === delay && timers.delete(id)) await timer.cb();
@@ -55,15 +57,20 @@ function renderer(file, api = {}) {
   };
 }
 
-test('Quick Add prefills a term without saving and only offers an exact suggestion', async () => {
-  let draft = { term: 'One', suggestion: 'A number' };
+test('Quick Add refreshes the locale-specific match without changing a draft or saving', async () => {
+  let draft = { term: 'One' };
   let opens;
+  let localeUpdated;
+  let russian = false;
   let closes = 0;
   const app = renderer('src/windows/quick-add/quick-add.js', {
     onQuickAddOpened: cb => { opens = cb; },
-    onLocaleUpdated: () => {},
+    onLocaleUpdated: cb => { localeUpdated = cb; },
     getLocale: async () => ({ strings: {} }),
     takeQuickAddDraft: async () => { const next = draft; draft = null; return next; },
+    quickAddSuggestions: async term => term.toLowerCase() === 'one' ? [
+      russian ? { source: 'en-ru', answer: 'один' } : { source: 'en-definitions', answer: 'A number' },
+    ] : [],
     closeQuickAdd: async () => { closes++; },
     saveQuickCard: () => assert.fail('Opening, suggesting and cancelling must never save'),
   });
@@ -71,26 +78,101 @@ test('Quick Add prefills a term without saving and only offers an exact suggesti
   const input = app.elements.get('quick-add-term');
   const definition = app.elements.get('quick-add-definition');
   const suggestion = app.elements.get('quick-add-suggestion');
+  const options = app.elements.get('quick-add-options');
   assert.equal(input.value, 'One');
   assert.equal(definition.value, '');
   assert.equal(definition.focused, true);
   assert.equal(suggestion.hidden, false);
+  assert.deepEqual(options.children.map(button => button.type), ['button']);
+  assert.deepEqual(options.children.map(button => button.children[0].textContent),
+    ['English definition']);
+  const stale = options.children[0];
+  definition.value = 'My own answer';
   input.value = 'Another';
   input.listeners.input();
+  stale.listeners.click();
+  assert.equal(definition.value, 'My own answer');
+  await app.tick(180);
   assert.equal(suggestion.hidden, true);
   input.value = ' one ';
   input.listeners.input();
-  app.elements.get('quick-add-use').listeners.click();
+  await app.tick(180);
+  assert.equal(definition.value, 'My own answer');
+  options.children[0].listeners.click();
   assert.equal(definition.value, 'A number');
+  russian = true;
+  await localeUpdated({ strings: { 'quickAdd.russianTranslation': 'Перевод на русский' } });
+  assert.equal(options.children[0].children[0].textContent, 'Перевод на русский');
+  assert.equal(definition.value, 'A number');
+  options.children[0].listeners.click();
+  assert.equal(definition.value, 'один');
   await opens();
-  assert.equal(definition.value, 'A number', 'a duplicate open event keeps the draft');
+  assert.equal(definition.value, 'один', 'a duplicate open event keeps the draft');
   await app.elements.get('quick-add-form').listeners.keydown({ key: 'Escape', preventDefault() {} });
   assert.equal(closes, 1);
   assert.equal(definition.value, '');
-  draft = { term: '', suggestion: null };
+  draft = { term: '' };
   await opens();
   assert.equal(input.value, '');
   assert.equal(input.focused, true);
+});
+
+test('Quick Add ignores late lookups after typing or cancel, and manual answers survive lookup failure', async () => {
+  const pending = new Map();
+  const app = renderer('src/windows/quick-add/quick-add.js', {
+    quickAddSuggestions: term => new Promise((resolve, reject) => pending.set(term, { resolve, reject })),
+    closeQuickAdd: async () => {},
+  });
+  const input = app.elements.get('quick-add-term');
+  const options = app.elements.get('quick-add-options');
+  const answer = app.elements.get('quick-add-definition');
+  function type(term) { input.value = term; input.listeners.input(); }
+  type('skipped');
+  type('first');
+  const first = app.tick(180);
+  assert.equal(pending.has('skipped'), false, 'rapid typing debounces native lookups');
+  type('second');
+  const second = app.tick(180);
+  answer.value = 'Manually typed';
+  pending.get('second').resolve([{ source: 'en-ru', answer: 'Second answer' }]);
+  await second;
+  pending.get('first').resolve([{ source: 'en-definitions', answer: 'Stale answer' }]);
+  await first;
+  assert.equal(options.children.length, 1);
+  assert.equal(options.children[0].children[1].textContent, 'Second answer');
+  assert.equal(answer.value, 'Manually typed');
+  type('third');
+  const third = app.tick(180);
+  pending.get('third').reject(new Error('unavailable'));
+  await third;
+  assert.equal(options.children.length, 0);
+  assert.equal(answer.value, 'Manually typed');
+  type('fourth');
+  const fourth = app.tick(180);
+  await app.elements.get('quick-add-cancel').listeners.click();
+  pending.get('fourth').resolve([{ source: 'en-ru', answer: 'After close' }]);
+  await fourth;
+  assert.equal(options.children.length, 0);
+  assert.equal(answer.value, '');
+});
+
+test('Quick Add recovers a pending first draft when the open event is missed', async () => {
+  let pending = null;
+  const lookups = [];
+  const app = renderer('src/windows/quick-add/quick-add.js', {
+    onQuickAddOpened: () => {}, onLocaleUpdated: () => {},
+    getLocale: async () => ({ strings: {} }),
+    takeQuickAddDraft: async () => { const d = pending; pending = null; return d; },
+    quickAddSuggestions: async q => { lookups.push(q); return []; },
+  });
+  await app.run('init()');
+  pending = { term: 'AbOuT' };
+  await Promise.all([app.documentEvents.visibilitychange(), app.windowEvents.focus()]);
+  assert.equal(app.elements.get('quick-add-term').value, 'AbOuT');
+  assert.deepEqual(lookups, ['AbOuT']);
+  app.elements.get('quick-add-definition').value = 'Keep my edits';
+  await app.windowEvents.focus();
+  assert.equal(app.elements.get('quick-add-definition').value, 'Keep my edits');
 });
 
 test('Quick Add serializes saves, retains rejected drafts and closes on success', async () => {

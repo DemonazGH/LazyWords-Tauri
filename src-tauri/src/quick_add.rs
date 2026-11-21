@@ -1,12 +1,15 @@
 use std::fs::{self, File};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use serde::Serialize;
 use tauri::{App, AppHandle, Emitter, Manager, State, WebviewWindow};
 
 use crate::state::AppState;
 use crate::word_engine::WordEntry;
+mod suggestions;
+use suggestions::{Suggestion, SuggestionIndex};
 
 pub const DECK_ID: &str = "quick-add:my-words";
 const WINDOW: &str = "quick-add";
@@ -22,7 +25,6 @@ const HEADERS: [&str; 2] = ["term", "definition"];
 #[derive(Serialize)]
 pub struct Draft {
     term: String,
-    suggestion: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
@@ -177,20 +179,24 @@ fn clipboard_term() -> Option<String> {
     None
 }
 
-fn find_suggestion(entries: Vec<WordEntry>, term: &str) -> Option<String> {
-    let key = term.to_lowercase();
-    entries
-        .into_iter()
-        .find(|word| word.term.to_lowercase() == key)
-        .map(|word| word.definition)
-}
-
-fn bundled_suggestion(app: &AppHandle, active: &str, term: &str) -> Option<String> {
-    if term.is_empty() || !matches!(active, "en-ru" | "en-definitions" | "en-irregular-verbs") {
-        return None;
+#[tauri::command]
+pub fn quick_add_suggestions(
+    window: WebviewWindow,
+    state: State<'_, AppState>,
+    term: String,
+) -> Vec<Suggestion> {
+    static INDEX: OnceLock<SuggestionIndex> = OnceLock::new();
+    if window.label() != WINDOW {
+        return vec![];
     }
-    let path = crate::commands::get_bundled_dicts_dir(app).join(format!("{active}.csv"));
-    find_suggestion(crate::dictionary_loader::load_dictionary(&path).ok()?, term)
+    let Some(term) = clean_term(&term) else {
+        return vec![];
+    };
+    let index = INDEX.get_or_init(|| {
+        SuggestionIndex::load(&crate::commands::get_bundled_dicts_dir(window.app_handle()))
+    });
+    let i18n = state.i18n.lock().unwrap();
+    index.lookup(&i18n.current_locale, term)
 }
 
 pub fn create_window(app: &App) -> tauri::Result<()> {
@@ -200,7 +206,7 @@ pub fn create_window(app: &App) -> tauri::Result<()> {
         tauri::WebviewUrl::App("windows/quick-add/quick-add.html".into()),
     )
     .title("LazyWords Quick Add")
-    .inner_size(460.0, 450.0)
+    .inner_size(460.0, 530.0)
     .min_inner_size(360.0, 340.0)
     .visible(false)
     .build()?;
@@ -220,10 +226,8 @@ pub fn open(app: &AppHandle) {
     };
     if !window.is_visible().unwrap_or(false) {
         let state = app.state::<AppState>();
-        let active = state.settings.lock().unwrap().active_dictionary.clone();
         let term = clipboard_term().unwrap_or_default();
-        let suggestion = bundled_suggestion(app, &active, &term);
-        *state.quick_add_draft.lock().unwrap() = Some(Draft { term, suggestion });
+        *state.quick_add_draft.lock().unwrap() = Some(Draft { term });
         crate::center_on_cursor_monitor(&window);
         if window.show().is_err() {
             state.quick_add_draft.lock().unwrap().take();
@@ -539,7 +543,7 @@ mod tests {
     }
 
     #[test]
-    fn lookup_only_suggests_an_exact_term_and_validates_inputs() {
+    fn validates_quick_add_inputs() {
         for text in ["", " ", "first\nsecond", "control\0text"] {
             assert!(clean_term(text).is_none());
         }
@@ -547,11 +551,5 @@ mod tests {
         assert!(clean_card("word", " ").is_err());
         assert!(clean_card("word", "bad\0definition").is_err());
         assert!(clean_card("word", &"a".repeat(DEFINITION_LIMIT + 1)).is_err());
-        let entries = || vec![clean_card("Word", "meaning").unwrap()];
-        assert_eq!(
-            find_suggestion(entries(), "WORD").as_deref(),
-            Some("meaning")
-        );
-        assert!(find_suggestion(entries(), "wor").is_none());
     }
 }

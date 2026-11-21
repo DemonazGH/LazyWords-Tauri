@@ -15,10 +15,10 @@
       <input id="quick-add-term" maxlength="160" required autocomplete="off">
       <label for="quick-add-definition" data-i18n="quickAdd.definition">Definition or translation</label>
       <textarea id="quick-add-definition" maxlength="4000" rows="3" required></textarea>
-      <div id="quick-add-suggestion" class="suggestion" hidden>
-        <p id="quick-add-preview"></p>
-        <button type="button" id="quick-add-use" data-i18n="quickAdd.useSuggestion">Use suggestion</button>
-      </div>
+      <fieldset id="quick-add-suggestion" class="suggestion" hidden>
+        <legend data-i18n="quickAdd.useSuggestion">Use a suggested answer</legend>
+        <div id="quick-add-options"></div>
+      </fieldset>
       <p id="quick-add-status" role="status"></p>
       <div class="actions">
         <button type="button" id="quick-add-cancel" data-i18n="quickAdd.cancel">Cancel</button>
