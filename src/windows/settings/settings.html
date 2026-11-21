@@ -129,7 +129,7 @@
       <input type="text" id="learned-search" class="learned-search"
         data-i18n-placeholder="settings.learned.search" placeholder="Search…" style="display:none">
       <ul id="learned-list" class="learned-list"></ul>
-      <p id="learned-empty" class="hint" data-i18n="settings.learned.empty">No learned words. Use Ctrl+Shift+K to mark a word.</p>
+      <p id="learned-empty" class="hint" data-i18n="settings.learned.empty">No learned cards yet.</p>
       <div id="learned-legacy" hidden>
         <p id="learned-legacy-count" class="hint"></p>
         <label for="legacy-deck" data-i18n="learned.legacy.deck">Dictionary to review</label>
@@ -167,14 +167,27 @@
     </div>
 
     <div class="group">
-      <label class="group-title" data-i18n="settings.hotkeys">Hotkeys</label>
-      <table class="hotkeys">
-        <tr><td><kbd>Ctrl+Shift+P</kbd></td><td data-i18n="settings.hotkey.pause">Pause / resume</td></tr>
-        <tr><td><kbd>Ctrl+Shift+N</kbd></td><td data-i18n="settings.hotkey.next">Next word</td></tr>
-        <tr><td><kbd>Ctrl+Shift+K</kbd></td><td data-i18n="settings.hotkey.know">Know — remove from rotation</td></tr>
-        <tr><td><kbd>Ctrl+Shift+W</kbd></td><td data-i18n="settings.hotkey.settings">Open / close settings</td></tr>
-        <tr><td><kbd>Ctrl+Shift+A</kbd></td><td data-i18n="quickAdd.title">Quick Add</td></tr>
-      </table>
+      <h2 class="group-title" data-i18n="settings.hotkeys">Hotkeys</h2>
+      <p class="hint" data-i18n="hotkeys.warning">Global shortcuts can override shortcuts in the app you are using, even if Windows reports no conflict. Settings and Quick Add are also available in the tray menu.</p>
+      <p class="hint" id="hotkeys-format" data-i18n="hotkeys.format">Type Ctrl or Alt, optionally Shift, plus a letter, digit or F-key (except F12), e.g. Ctrl+Shift+N. Uncheck Enabled and apply to turn off a shortcut.</p>
+      <div id="hotkeys-editor"></div>
+      <p id="hotkeys-load-error" class="hint" role="alert" hidden data-i18n="hotkeys.loadError">Could not load shortcuts. Reopen Settings to retry.</p>
+      <template id="hotkey-template">
+        <form class="hotkey-row">
+          <fieldset disabled>
+            <legend></legend>
+            <div class="hotkey-controls">
+              <label class="hotkey-keys-label" data-i18n="hotkeys.keys">Keys</label>
+              <input class="hotkey-keys" type="text" maxlength="40" autocomplete="off" spellcheck="false" aria-describedby="hotkeys-format">
+              <input class="hotkey-enabled" type="checkbox">
+              <label class="hotkey-enabled-label" data-i18n="hotkeys.enabled">Enabled</label>
+              <button type="submit" class="btn-secondary" data-i18n="hotkeys.apply">Apply</button>
+            </div>
+            <p class="hint hotkey-status"></p>
+          </fieldset>
+          <p class="hint hotkey-feedback" role="status"></p>
+        </form>
+      </template>
     </div>
 
   </section>

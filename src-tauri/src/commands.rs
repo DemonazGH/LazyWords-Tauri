@@ -49,6 +49,8 @@ pub fn get_settings(app: AppHandle, state: State<'_, AppState>) -> Settings {
 
 #[tauri::command]
 pub fn save_settings(app: AppHandle, state: State<'_, AppState>, new_settings: Value) -> bool {
+    // Shortcut changes must also update live OS registrations via set_hotkey.
+    if new_settings.get("hotkeys").is_some() { return false; }
     let startup_requested = new_settings.get("autoStart").and_then(Value::as_bool);
     let mut current = state.settings.lock().unwrap();
     let old_dict = current.active_dictionary.clone();

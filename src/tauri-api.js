@@ -3,6 +3,8 @@ const { listen } = window.__TAURI__.event;
 
 window.api = {
   getSettings: () => invoke('get_settings'),
+  getHotkeys: () => invoke('get_hotkeys'),
+  setHotkey: (action, input) => invoke('set_hotkey', { action, input }),
   saveSettings: (patch) => invoke('save_settings', { newSettings: patch }),
   completeOnboarding: (dictId) => invoke('complete_onboarding', { dictId }),
   getLocale: () => invoke('get_locale'),

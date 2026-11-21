@@ -162,6 +162,32 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<TrayIcon> {
 
 // ── Menu event handler ─────────────────────────────────────────────────────────
 
+pub(crate) fn next_card(app: &AppHandle) {
+    use tauri::Emitter;
+    let state = app.state::<AppState>();
+    // Implicit unpause
+    *state.is_paused.lock().unwrap() = false;
+
+    let (dict_id, entry) = crate::scheduler::select_next(&state);
+    if let Some(word) = entry {
+        if let Some(window) = app.get_webview_window("main") {
+            let pos = state.settings.lock().unwrap().position.clone();
+            crate::reposition_window(&window, &pos);
+        }
+        // Record shown stat
+        {
+            let mut tracker = state.stats_tracker.lock().unwrap();
+            tracker.record_shown();
+            crate::commands::save_stats_to_disk(app, &tracker.stats);
+        }
+        let _ = app.emit("stats-updated", ());
+        crate::timer::emit_word(app, &word, &dict_id);
+        // Signal timer to reset its interval (prevents double card)
+        state.manual_trigger.notify_one();
+    }
+    refresh_tray(app);
+}
+
 fn handle_menu_event(app: &AppHandle, id: &str) {
     match id {
         "pause" => {
@@ -180,31 +206,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
             }
             refresh_tray(app);
         }
-        "next" => {
-            use tauri::Emitter;
-            let state = app.state::<AppState>();
-            // Implicit unpause
-            *state.is_paused.lock().unwrap() = false;
-
-            let (dict_id, entry) = crate::scheduler::select_next(&state);
-            if let Some(word) = entry {
-                if let Some(window) = app.get_webview_window("main") {
-                    let pos = state.settings.lock().unwrap().position.clone();
-                    crate::reposition_window(&window, &pos);
-                }
-                // Record shown stat
-                {
-                    let mut tracker = state.stats_tracker.lock().unwrap();
-                    tracker.record_shown();
-                    crate::commands::save_stats_to_disk(app, &tracker.stats);
-                }
-                let _ = app.emit("stats-updated", ());
-                crate::timer::emit_word(app, &word, &dict_id);
-                // Signal timer to reset its interval (prevents double card)
-                state.manual_trigger.notify_one();
-            }
-            refresh_tray(app);
-        }
+        "next" => next_card(app),
         "quick-add" => crate::quick_add::open(app),
         "settings" => {
             if let Some(window) = app.get_webview_window("settings") {

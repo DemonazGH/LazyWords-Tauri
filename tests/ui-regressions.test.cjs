@@ -57,6 +57,75 @@ function renderer(file, api = {}) {
   };
 }
 
+function hotkeyEditor(api) {
+  const app = renderer('src/windows/settings/settings.js', api);
+  app.run(`L = { 'hotkeys.current': 'Active: {keys}', 'hotkeys.off': 'Off',
+    'hotkeys.inactive': 'Unavailable: {keys}', 'hotkeys.unavailable': 'Already taken',
+    'hotkeys.saved': 'Saved' };
+    for (const action of Object.keys(hotkeyLabels)) {
+      hotkeyRows.set(action, { group: {disabled: true}, keys: {}, enabled: {},
+        status: {}, feedback: {dataset: {}}, message: '' });
+    }`);
+  return app;
+}
+
+test('hotkey settings load five independent rows; applying one only changes that action', async () => {
+  const bindings = Object.fromEntries(['pause', 'next', 'learned', 'settings', 'quickAdd']
+    .map(a => [a, {enabled: false, keys: '', active: false}]));
+  bindings.pause = {enabled: true, keys: 'Ctrl+Shift+P', active: true};
+  let calls = 0;
+  const app = hotkeyEditor({
+    getHotkeys: async () => bindings,
+    setHotkey: async (action, draft) => {
+      calls++;
+      assert.equal(action, 'quickAdd');
+      assert.equal(draft.keys.toLowerCase(), 'alt+q');
+      return bindings.quickAdd = {enabled: draft.enabled, keys: 'Alt+Q', active: draft.enabled};
+    },
+    saveSettings: () => assert.fail('Hotkeys must use the registration-aware command'),
+  });
+  await app.run('loadHotkeys()');
+  const add = app.run("hotkeyRows.get('quickAdd')");
+  const pause = app.run("hotkeyRows.get('pause')");
+  assert.equal(add.group.disabled, false);
+  assert.equal(add.status.textContent, 'Off');
+  assert.equal(pause.status.textContent, 'Active: Ctrl+Shift+P');
+  add.keys.value = 'alt+q';
+  add.enabled.checked = true;
+  await app.run("applyHotkey('quickAdd', hotkeyRows.get('quickAdd'))");
+  assert.equal(add.status.textContent, 'Active: Alt+Q');
+  assert.equal(add.keys.value, 'Alt+Q');
+  add.enabled.checked = false;
+  await app.run("applyHotkey('quickAdd', hotkeyRows.get('quickAdd'))");
+  assert.equal(add.keys.value, 'Alt+Q', 'disabling remembers the combination');
+  assert.equal(add.status.textContent, 'Off');
+  assert.equal(calls, 2);
+  assert.equal(pause.status.textContent, 'Active: Ctrl+Shift+P');
+});
+
+test('hotkey conflict keeps the draft and displays the actual active shortcut; duplicate Apply is ignored', async () => {
+  let reject, calls = 0;
+  const app = hotkeyEditor({
+    getHotkeys: async () => ({ next: {enabled: true, keys: 'Alt+N', active: true} }),
+    setHotkey: () => { calls++; return new Promise((_, r) => { reject = r; }); },
+  });
+  const row = app.run("hotkeyRows.get('next')");
+  row.group.disabled = false;
+  row.keys.value = 'Alt+P';
+  row.enabled.checked = true;
+  const pending = app.run("applyHotkey('next', hotkeyRows.get('next'))");
+  assert.equal(row.group.disabled, true);
+  await app.run("applyHotkey('next', hotkeyRows.get('next'))");
+  assert.equal(calls, 1);
+  reject('hotkeys.unavailable');
+  await pending;
+  assert.equal(row.group.disabled, false);
+  assert.equal(row.status.textContent, 'Active: Alt+N');
+  assert.equal(row.feedback.textContent, 'Already taken');
+  assert.equal(row.feedback.dataset.error, 'true');
+  assert.equal(row.keys.value, 'Alt+P');
+});
+
 test('Quick Add refreshes the locale-specific match without changing a draft or saving', async () => {
   let draft = { term: 'One' };
   let opens;

@@ -57,7 +57,7 @@ async function init() {
     return showCardTemporarily().catch(console.error);
   });
 
-  // Ctrl+Shift+K: mark current card as learned
+  // The configured Learn shortcut applies to the currently visible card.
   window.api.onMarkKnown(() => {
     if (!isCardVisible || currentCardId === null) return;
     const result = window.api.markLearned(currentCardId, currentDictionaryId);

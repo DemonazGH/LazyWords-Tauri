@@ -331,30 +331,22 @@ header {
   color: #f4f4f5;
 }
 
-/* ── Hotkeys table ───────────────────────────────────────── */
-
-.hotkeys {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.hotkeys td {
-  padding: 5px 0;
-  color: #d4d4d8;
-  vertical-align: middle;
-}
-
-.hotkeys td:first-child { width: 160px; }
-
-kbd {
+/* ── Hotkey editor ───────────────────────────────────────── */
+.hotkey-row fieldset { border: 0; border-bottom: 1px solid #3f3f46; margin: 0; padding: 6px 0 10px; min-width: 0; }
+.hotkey-row legend { font-weight: 600; padding: 8px 0 0; }
+.hotkey-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.hotkey-keys {
   background: #27272a;
   border: 1px solid #3f3f46;
   border-radius: 4px;
-  padding: 2px 7px;
-  font-family: 'Consolas', monospace;
-  font-size: 11px;
+  padding: 6px 8px;
+  font: inherit;
+  width: 20ch;
+  max-width: 100%;
   color: #f4f4f5;
 }
+.hotkey-feedback:empty { margin: 0; }
+.hotkey-feedback[data-error="true"] { color: #fda4af; }
 
 
 .btn-secondary {

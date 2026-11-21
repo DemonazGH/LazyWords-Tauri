@@ -28,6 +28,7 @@ function applyLocale(strings) {
   }
 
   // Re-render dynamic parts with new strings
+  for (const row of hotkeyRows.values()) renderHotkeyStatus(row);
   renderAnswerDelay();
   renderLearnedList();
   if (myWordsManager.open && !myWordsBusy) loadMyWords();
@@ -84,6 +85,85 @@ function flushPendingSettings() {
 }
 
 window.addEventListener('blur', () => flushPendingSettings().catch(console.error));
+
+const hotkeyLabels = {
+  pause: 'settings.hotkey.pause', next: 'settings.hotkey.next', learned: 'settings.hotkey.know',
+  settings: 'settings.hotkey.settings', quickAdd: 'quickAdd.title',
+};
+const hotkeyRows = new Map();
+let hotkeysLoaded = false;
+
+function renderHotkeyStatus(row) {
+  if (row.saved) {
+    const { enabled, keys, active } = row.saved;
+    const key = !enabled ? 'hotkeys.off' : active ? 'hotkeys.current' : 'hotkeys.inactive';
+    row.status.textContent = L[key]?.replace('{keys}', keys) ?? '';
+  }
+  row.feedback.textContent = L[row.message] ?? '';
+}
+
+function displayBinding(row, saved) {
+  row.saved = saved;
+  row.keys.value = saved.keys;
+  row.enabled.checked = saved.enabled;
+  renderHotkeyStatus(row);
+}
+
+async function applyHotkey(action, row) {
+  if (row.group.disabled) return;
+  row.group.disabled = true;
+  row.message = '';
+  renderHotkeyStatus(row);
+  try {
+    const saved = await window.api.setHotkey(action, { enabled: row.enabled.checked, keys: row.keys.value });
+    row.message = 'hotkeys.saved';
+    row.feedback.dataset.error = 'false';
+    displayBinding(row, saved);
+  } catch (error) {
+    row.message = ['hotkeys.invalid', 'hotkeys.duplicate', 'hotkeys.unavailable', 'hotkeys.restart'].includes(error)
+      ? error : 'hotkeys.saveError';
+    row.feedback.dataset.error = 'true';
+    // Reconcile the actual registration, but keep the user's unsaved text for correction.
+    try { row.saved = (await window.api.getHotkeys())[action]; } catch {}
+    renderHotkeyStatus(row);
+  } finally {
+    row.group.disabled = false;
+  }
+}
+
+function setupHotkeys() {
+  for (const [action, label] of Object.entries(hotkeyLabels)) {
+    const form = document.getElementById('hotkey-template').content.firstElementChild.cloneNode(true);
+    const row = { group: form.querySelector('fieldset'), keys: form.querySelector('.hotkey-keys'),
+      enabled: form.querySelector('.hotkey-enabled'), status: form.querySelector('.hotkey-status'),
+      feedback: form.querySelector('.hotkey-feedback'), message: '' };
+    form.querySelector('legend').dataset.i18n = label;
+    for (const field of ['keys', 'enabled']) {
+      row[field].id = action + '-hotkey-' + field;
+      form.querySelector('.hotkey-' + field + '-label').htmlFor = row[field].id;
+    }
+    form.addEventListener('submit', event => { event.preventDefault(); applyHotkey(action, row); });
+    hotkeyRows.set(action, row);
+    document.getElementById('hotkeys-editor').appendChild(form);
+  }
+}
+
+async function loadHotkeys() {
+  if (hotkeysLoaded) return;
+  const error = document.getElementById('hotkeys-load-error');
+  try {
+    const bindings = await window.api.getHotkeys();
+    if (hotkeysLoaded) return;
+    for (const [action, row] of hotkeyRows) {
+      displayBinding(row, bindings[action]);
+      row.group.disabled = false;
+    }
+    hotkeysLoaded = true;
+    error.hidden = true;
+  } catch {
+    error.hidden = false;
+  }
+}
 
 // ── Tab switching ──────────────────────────────────────────
 
@@ -728,9 +808,11 @@ async function init() {
     window.api.getLocale()
   ]);
   currentSettings = settingsResult;
+  setupHotkeys();
 
   // Apply locale first so all labels are translated before data is filled in
   applyLocale(localeData.strings);
+  await loadHotkeys();
 
   // Set language selector to current value
   document.getElementById('language').value = currentSettings.language ?? 'auto';
@@ -786,6 +868,7 @@ async function init() {
 
   // Fallback: refresh data every time the settings window receives focus
   window.addEventListener('focus', refreshSettingsData);
+  window.addEventListener('focus', loadHotkeys);
 }
 
 async function refreshSettingsData() {
