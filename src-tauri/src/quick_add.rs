@@ -11,6 +11,7 @@ use crate::scheduler::SchedulingHistory;
 use crate::state::AppState;
 use crate::word_engine::WordEntry;
 mod suggestions;
+pub(crate) mod practice;
 use suggestions::{Suggestion, SuggestionIndex};
 
 pub const DECK_ID: &str = "quick-add:my-words";
@@ -451,12 +452,9 @@ fn apply_deck_change(
         };
         let active = settings.active_dictionary == DECK_ID;
         if active && words.is_empty() {
-            let fallback = crate::commands::get_all_dict_ids(app).into_iter().find_map(|id| {
-                let words = crate::commands::load_dictionary_by_id(app, &id)?;
-                (!words.is_empty()).then_some((id, words))
-            });
+            let fallback = practice::replacement_for_empty(app, &settings, &state.learned.lock().unwrap());
             let (id, fallback_words) = fallback.unwrap_or_default();
-            settings.active_dictionary = id;
+            settings.select_dictionary(id);
             words = fallback_words;
             // The CSV already committed. Startup also falls back if settings could not be written.
             crate::settings::save_settings(&path.with_file_name("settings.json"), &settings);
@@ -491,6 +489,7 @@ fn apply_deck_change(
 fn select_saved_deck(path: &Path, settings: &mut crate::settings::Settings) -> SaveOutcome {
     if settings.active_dictionary == DECK_ID { return SaveOutcome::Saved; }
     let mut next = settings.clone();
+    next.my_words_return_to = (!settings.active_dictionary.is_empty()).then(|| settings.active_dictionary.clone());
     next.active_dictionary = DECK_ID.into();
     next.first_launch = false;
     // The CSV already committed. A settings failure must not invite a duplicate save.
@@ -521,11 +520,13 @@ mod tests {
         fs::create_dir(&settings_path).unwrap();
         assert_eq!(select_saved_deck(&settings_path, &mut settings), SaveOutcome::SavedWithoutSwitch);
         assert_eq!(settings.active_dictionary, "original");
+        assert!(settings.my_words_return_to.is_none());
         assert!(settings.first_launch);
         fs::remove_dir(&settings_path).unwrap();
         assert_eq!(select_saved_deck(&settings_path, &mut settings), SaveOutcome::Saved);
         let restored = crate::settings::load_settings(&settings_path).unwrap();
         assert_eq!(restored.active_dictionary, DECK_ID);
+        assert_eq!(restored.my_words_return_to.as_deref(), Some("original"));
         assert_eq!(restored.language, "ru");
         assert!(!restored.first_launch);
         assert_eq!(read_deck(&deck).unwrap().len(), 1);
