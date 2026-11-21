@@ -203,7 +203,12 @@ fn settle_edit(
             if learned.ids(DECK_ID).contains(&edit.new) {
                 settled &= save(learned);
             }
-            settled &= history.rename_card(DECK_ID, &edit.old, &edit.new);
+            // Likewise for the history: flush whenever it names the new card, because an
+            // earlier attempt may have moved it in memory without reaching the file.
+            history.rename_card(DECK_ID, &edit.old, &edit.new);
+            if history.mentions(DECK_ID, &edit.new) {
+                settled &= history.flush();
+            }
         }
     }
     if settled {
@@ -238,7 +243,7 @@ fn edit_card(
     let new_id = crate::scheduler::card_id(&card);
     let words = change_card_with(path, card_id, Some(card), || {
         // Progress saved for a removed card with this text is not merged by guesswork.
-        if learned.ids(DECK_ID).contains(&new_id) || history.has_card(DECK_ID, &new_id) {
+        if learned.ids(DECK_ID).contains(&new_id) || history.mentions(DECK_ID, &new_id) {
             return Err(RETAINED_PROGRESS);
         }
         let edit = PendingEdit { old: card_id.to_owned(), new: new_id.clone() };
@@ -779,6 +784,90 @@ mod tests {
         assert_eq!((profile.bytes(), profile.learned.clone()), before);
         profile.restart();
         assert_eq!((profile.bytes(), profile.learned.clone()), before);
+
+        // Adding the proposed correction later gives a card that is still up for practice.
+        let words = append_card(&profile.file(DECK_FILE), profile.fixed.clone()).unwrap();
+        let mut engine = WordEngine::new();
+        engine.load_dictionary(words);
+        engine.set_learned_ids(profile.learned.ids(DECK_ID));
+        let unlearned: Vec<_> = engine.unlearned_cards().map(|(_, word)| word.term.clone()).collect();
+        assert_eq!(unlearned, ["other", "the"]);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_locked_history_file_delays_the_move_but_never_resets_the_history() {
+        use std::os::windows::fs::OpenOptionsExt;
+        use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_WRITE};
+
+        let mut profile = Profile::new();
+        {
+            let _lock = fs::OpenOptions::new().read(true)
+                .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+                .open(profile.file("progress.json")).unwrap();
+            assert_eq!(profile.edit(&profile.typo_id.clone(), profile.fixed.clone(), true), Ok(true));
+            // The running app already counts the history under the corrected card.
+            assert_eq!(profile.history.shown_for_test(DECK_ID, &card_id(&profile.fixed)), Some(2));
+            assert!(profile.file(EDIT_JOURNAL).exists());
+            // A retry while the file is still locked must not drop the journal either.
+            let renamed = clean_card("another", "still in rotation").unwrap();
+            assert_eq!(profile.edit(&profile.other_id.clone(), renamed, true), Err(STORAGE_ERROR));
+            assert!(profile.file(EDIT_JOURNAL).exists());
+        }
+        profile.restart();
+        profile.assert_moved();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_history_move_left_in_memory_is_written_by_the_next_edit() {
+        use std::os::windows::fs::OpenOptionsExt;
+        use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_WRITE};
+
+        let mut profile = Profile::new();
+        {
+            let _lock = fs::OpenOptions::new().read(true)
+                .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+                .open(profile.file("progress.json")).unwrap();
+            assert_eq!(profile.edit(&profile.typo_id.clone(), profile.fixed.clone(), true), Ok(true));
+        }
+        // No restart: the next edit settles the earlier one first, then goes through.
+        let renamed = clean_card("another", "still in rotation").unwrap();
+        assert_eq!(profile.edit(&profile.other_id.clone(), renamed, true), Ok(true));
+        assert!(!profile.file(EDIT_JOURNAL).exists());
+        profile.restart();
+        assert_eq!(profile.history.shown_for_test(DECK_ID, &card_id(&profile.fixed)), Some(2));
+        assert_eq!(profile.history.shown_for_test(DECK_ID, &profile.typo_id), None);
+        assert_eq!(profile.learned.ids(DECK_ID), [card_id(&profile.fixed)]);
+    }
+
+    #[test]
+    fn a_deleted_cards_mark_or_history_is_not_inherited_by_an_edit() {
+        // B is learned and then deleted; unlearned A may not take B's text.
+        let mut profile = Profile::new();
+        let b = clean_card("teh", "the definite article").unwrap();
+        change_card(&profile.file(DECK_FILE), &profile.typo_id, None).unwrap();
+        let before = (profile.bytes(), profile.learned.clone());
+        assert_eq!(profile.edit(&profile.other_id.clone(), b.clone(), true), Err(RETAINED_PROGRESS));
+        assert_eq!((profile.bytes(), profile.learned.clone()), before);
+        let mut engine = WordEngine::new();
+        engine.load_dictionary(read_deck(&profile.file(DECK_FILE)).unwrap());
+        engine.set_learned_ids(profile.learned.ids(DECK_ID));
+        assert_eq!(engine.get_random_word().unwrap().card_id, profile.other_id);
+
+        // B was shown seven times and deleted, A once; both counts survive the refused edit.
+        let mut profile = Profile::new();
+        profile.learned = Learned::from_legacy([(DECK_ID.to_owned(), vec![7])].into());
+        assert!(profile.save(&profile.learned));
+        profile.history.record_for_test(DECK_ID, &profile.typo_id, 7);
+        profile.history.record_for_test(DECK_ID, &profile.other_id, 1);
+        change_card(&profile.file(DECK_FILE), &profile.typo_id, None).unwrap();
+        let before = profile.bytes();
+        assert_eq!(profile.edit(&profile.other_id.clone(), b, true), Err(RETAINED_PROGRESS));
+        profile.restart();
+        assert_eq!(profile.bytes(), before);
+        assert_eq!(profile.history.shown_for_test(DECK_ID, &profile.typo_id), Some(7));
+        assert_eq!(profile.history.shown_for_test(DECK_ID, &profile.other_id), Some(1));
     }
 
     #[test]

@@ -117,27 +117,29 @@ impl SchedulingHistory {
         })
     }
 
-    pub fn has_card(&self, deck_id: &str, id: &str) -> bool {
-        self.progress.decks.get(deck_id).is_some_and(|deck| deck.cards.contains_key(id))
-    }
-
     /// Keeps a card's exposure history when its content, and so its ID, is edited.
-    /// Returns false only if the moved history could not be saved.
-    pub fn rename_card(&mut self, deck_id: &str, old: &str, new: &str) -> bool {
+    /// Only memory changes here; `flush` writes it.
+    pub fn rename_card(&mut self, deck_id: &str, old: &str, new: &str) {
         let Some(deck) = self.progress.decks.get_mut(deck_id) else {
-            return true;
+            return;
         };
-        let moved = deck.cards.remove(old);
-        let was_last = deck.last_card.as_deref() == Some(old);
-        if moved.is_none() && !was_last {
-            return true;
-        }
-        if let Some(exposure) = moved {
+        if let Some(exposure) = deck.cards.remove(old) {
             deck.cards.insert(new.to_owned(), exposure);
         }
-        if was_last {
+        if deck.last_card.as_deref() == Some(old) {
             deck.last_card = Some(new.to_owned());
         }
+    }
+
+    /// True if the deck's history names this card, as an exposure or as the last card shown.
+    pub fn mentions(&self, deck_id: &str, id: &str) -> bool {
+        self.progress.decks.get(deck_id).is_some_and(|deck| {
+            deck.cards.contains_key(id) || deck.last_card.as_deref() == Some(id)
+        })
+    }
+
+    /// Writes the history now. Returns false if it could not be saved.
+    pub fn flush(&self) -> bool {
         match self.persist() {
             Ok(()) => true,
             Err(error) => {
@@ -369,9 +371,12 @@ mod tests {
         history.next("deck", &engine, 20, &mut rng).unwrap();
         let old = engine.card_id(0).clone();
 
-        assert!(history.rename_card("deck", "absent", "ignored"));
-        assert!(!path.exists(), "nothing to move, so nothing is written");
-        assert!(history.rename_card("deck", &old, "new"));
+        history.rename_card("deck", "absent", "ignored");
+        assert!(!history.mentions("deck", "ignored"));
+        history.rename_card("deck", &old, "new");
+        assert!(history.mentions("deck", "new") && !history.mentions("deck", &old));
+        assert!(!path.exists(), "moving is in memory until flushed");
+        assert!(history.flush());
 
         let deck = &SchedulingHistory::load(path).progress.decks["deck"];
         assert!(!deck.cards.contains_key(&old));
