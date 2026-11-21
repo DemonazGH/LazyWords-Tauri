@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs::{self, File};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
@@ -6,6 +7,7 @@ use std::sync::OnceLock;
 use serde::Serialize;
 use tauri::{App, AppHandle, Emitter, Manager, State, WebviewWindow};
 
+use crate::learned::Learned;
 use crate::state::AppState;
 use crate::word_engine::WordEntry;
 mod suggestions;
@@ -122,6 +124,16 @@ fn change_card(
     card_id: &str,
     replacement: Option<WordEntry>,
 ) -> Result<Option<Vec<WordEntry>>, &'static str> {
+    change_card_with(path, card_id, replacement, || Ok(()))
+}
+
+/// `before_write` runs once the change is known to be valid, just before the CSV is replaced.
+fn change_card_with(
+    path: &Path,
+    card_id: &str,
+    replacement: Option<WordEntry>,
+    before_write: impl FnOnce() -> Result<(), &'static str>,
+) -> Result<Option<Vec<WordEntry>>, &'static str> {
     let mut words = read_deck(path)?;
     let mut matches = words.iter().enumerate()
         .filter(|(_, word)| crate::scheduler::card_id(word) == card_id);
@@ -142,9 +154,46 @@ fn change_card(
         words.remove(index);
     }
 
-    // Learned markers and scheduling history stay keyed to their original content.
+    // A deleted card's learned marker and scheduling history stay keyed to its content.
+    before_write()?;
     write_deck(path, &words)?;
     Ok(Some(words))
+}
+
+/// Edits a card and carries its learned marker over to the new content.
+///
+/// The new ID is saved before the CSV changes and the old one is dropped only afterwards, so a
+/// failure at any step can leave a spare marker behind but never puts a learned card back into
+/// rotation.
+fn edit_card(
+    path: &Path,
+    learned: &mut Learned,
+    card_id: &str,
+    card: WordEntry,
+    save: impl Fn(&Learned) -> bool,
+) -> Result<Option<Vec<WordEntry>>, &'static str> {
+    let new_id = crate::scheduler::card_id(&card);
+    let was_learned = learned.ids(DECK_ID).iter().any(|id| id == card_id);
+    let words = change_card_with(path, card_id, Some(card), || {
+        if !was_learned {
+            return Ok(());
+        }
+        let mut next = learned.clone();
+        next.mark(DECK_ID, &new_id);
+        if !save(&next) {
+            return Err(STORAGE_ERROR);
+        }
+        *learned = next;
+        Ok(())
+    })?;
+    if words.is_some() && was_learned {
+        let mut next = learned.clone();
+        next.restore(DECK_ID, &HashSet::from([card_id]));
+        if save(&next) {
+            *learned = next;
+        }
+    }
+    Ok(words)
 }
 
 fn write_deck(path: &Path, words: &[WordEntry]) -> Result<(), &'static str> {
@@ -293,7 +342,20 @@ pub fn edit_my_word(
 ) -> Result<(), String> {
     let app = settings_app(&window)?;
     let card = clean_card(&term, &definition)?;
-    apply_deck_change(app, &state, false, |path| change_card(path, &card_id, Some(card))).map(|_| ())
+    let new_id = crate::scheduler::card_id(&card);
+    apply_deck_change(app, &state, false, |path| {
+        let words = {
+            let mut learned = state.learned.lock().unwrap();
+            edit_card(path, &mut learned, &card_id, card, |next| {
+                crate::commands::save_learned(app, next)
+            })?
+        };
+        if words.is_some() {
+            state.scheduling_history.lock().unwrap().rename_card(DECK_ID, &card_id, &new_id);
+        }
+        Ok(words)
+    })
+    .map(|_| ())
 }
 
 #[tauri::command]
@@ -476,6 +538,69 @@ mod tests {
         engine.load_dictionary(read_deck(&path).unwrap());
         engine.set_learned_ids(learned.ids(DECK_ID));
         assert_eq!(engine.learned_indices.len(), 2);
+    }
+
+    #[test]
+    fn editing_a_learned_card_moves_its_marker_and_never_unlearns_on_failure() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("my-words.csv");
+        let learned_path = dir.path().join(crate::learned::FILE_NAME);
+        let save = |next: &Learned| crate::profile_data::save_json(&learned_path, next).is_ok();
+        let typo = clean_card("teh", "the definite article").unwrap();
+        let other = clean_card("other", "still in rotation").unwrap();
+        let fixed = clean_card("the", "the definite article").unwrap();
+        let [typo_id, other_id, fixed_id] = [&typo, &other, &fixed].map(card_id);
+        for card in [typo, other.clone()] {
+            append_card(&path, card).unwrap();
+        }
+        let mut learned = Learned::from_legacy([(DECK_ID.to_owned(), vec![7])].into());
+        learned.mark(DECK_ID, &typo_id);
+        let before = learned.clone();
+        let deck_before = fs::read(&path).unwrap();
+
+        // Rejected edits change neither the deck nor any marker, in memory or on disk.
+        assert_eq!(edit_card(&path, &mut learned, &typo_id, other, save).err(), Some(DUPLICATE));
+        assert_eq!(
+            edit_card(&path, &mut learned, "missing", fixed.clone(), save).err(),
+            Some(STALE_CARD)
+        );
+        assert_eq!(
+            edit_card(&path, &mut learned, &typo_id, fixed.clone(), |_| false).err(),
+            Some(STORAGE_ERROR)
+        );
+        assert_eq!(learned, before);
+        assert!(!learned_path.exists());
+        assert_eq!(fs::read(&path).unwrap(), deck_before);
+
+        let words = edit_card(&path, &mut learned, &typo_id, fixed.clone(), save).unwrap().unwrap();
+        assert_eq!(learned.ids(DECK_ID), [fixed_id.clone()]);
+        assert_eq!(learned.pending(DECK_ID), &[7]);
+        let saved: Learned = serde_json::from_slice(&fs::read(&learned_path).unwrap()).unwrap();
+        assert_eq!(saved, learned);
+        let mut engine = WordEngine::new();
+        engine.load_dictionary(words);
+        engine.set_learned_ids(learned.ids(DECK_ID));
+        assert_eq!(engine.get_random_word().unwrap().card_id, other_id);
+
+        // An unlearned card stays unlearned, and re-saving unchanged text writes nothing.
+        let renamed = clean_card("another", "still in rotation").unwrap();
+        edit_card(&path, &mut learned, &other_id, renamed.clone(), |_| panic!("no marker to move"))
+            .unwrap();
+        assert_eq!(learned.ids(DECK_ID), [fixed_id.clone()]);
+        assert!(edit_card(&path, &mut learned, &fixed_id, fixed, |_| panic!("unchanged"))
+            .unwrap()
+            .is_none());
+
+        // If dropping the old marker cannot be saved, the card still stays learned.
+        let again = clean_card("the", "definite article").unwrap();
+        let saves = std::cell::Cell::new(0);
+        edit_card(&path, &mut learned, &fixed_id, again.clone(), |next| {
+            saves.set(saves.get() + 1);
+            saves.get() == 1 && save(next)
+        })
+        .unwrap();
+        assert_eq!(saves.get(), 2);
+        assert!(learned.ids(DECK_ID).contains(&card_id(&again)));
     }
 
     #[test]

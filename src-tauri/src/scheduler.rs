@@ -117,6 +117,26 @@ impl SchedulingHistory {
         })
     }
 
+    /// Keeps a card's exposure history when its content, and so its ID, is edited.
+    pub fn rename_card(&mut self, deck_id: &str, old: &str, new: &str) {
+        let Some(deck) = self.progress.decks.get_mut(deck_id) else {
+            return;
+        };
+        let moved = deck.cards.remove(old);
+        let was_last = deck.last_card.as_deref() == Some(old);
+        if let Some(exposure) = moved {
+            deck.cards.insert(new.to_owned(), exposure);
+        } else if !was_last {
+            return;
+        }
+        if was_last {
+            deck.last_card = Some(new.to_owned());
+        }
+        if let Err(error) = self.persist() {
+            eprintln!("Could not save scheduling history: {error}");
+        }
+    }
+
     fn persist(&self) -> io::Result<()> {
         if !self.writable {
             return Ok(());
@@ -314,6 +334,29 @@ mod tests {
             restored.progress.decks["deck"].cards[original.card_id(0)].shown,
             2
         );
+    }
+
+    #[test]
+    fn renaming_a_card_keeps_its_history_and_survives_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("progress.json");
+        let mut history = SchedulingHistory::load(path.clone());
+        let engine = engine(&[("only", "card")]);
+        let mut rng = StdRng::seed_from_u64(1);
+        history.next("deck", &engine, 10, &mut rng).unwrap();
+        history.next("deck", &engine, 20, &mut rng).unwrap();
+        let old = engine.card_id(0).clone();
+
+        history.rename_card("deck", "absent", "ignored");
+        assert!(!path.exists(), "nothing to move, so nothing is written");
+        history.rename_card("deck", &old, "new");
+
+        let deck = &SchedulingHistory::load(path).progress.decks["deck"];
+        assert!(!deck.cards.contains_key(&old));
+        assert!(!deck.cards.contains_key("ignored"));
+        assert_eq!(deck.cards["new"].shown, 2);
+        assert_eq!(deck.cards["new"].last_shown, 20);
+        assert_eq!(deck.last_card.as_deref(), Some("new"));
     }
 
     #[test]
