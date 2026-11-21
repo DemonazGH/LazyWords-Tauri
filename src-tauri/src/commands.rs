@@ -11,10 +11,17 @@ use crate::settings::Settings;
 
 // ── Persistence helpers ──────────────────────────────────────────────────────
 
-fn commit_learned(app: &AppHandle, current: &mut Learned, next: Learned) -> bool {
+pub(crate) fn save_learned(app: &AppHandle, learned: &Learned) -> bool {
     let path = app.path().app_data_dir().unwrap().join("data").join(FILE_NAME);
-    if let Err(error) = crate::profile_data::save_json(&path, &next) {
+    if let Err(error) = crate::profile_data::save_json(&path, learned) {
         eprintln!("Failed to save learned progress ({}): {error}", path.display());
+        return false;
+    }
+    true
+}
+
+fn commit_learned(app: &AppHandle, current: &mut Learned, next: Learned) -> bool {
+    if !save_learned(app, &next) {
         return false;
     }
     *current = next;
